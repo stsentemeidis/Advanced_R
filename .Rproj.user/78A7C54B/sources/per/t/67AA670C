@@ -2,20 +2,20 @@
     "collab_server" : "",
     "contents" : "",
     "created" : 1555965994845.000,
-    "dirty" : true,
+    "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "0",
+    "hash" : "3901316264",
     "id" : "67AA670C",
-    "lastKnownWriteTime" : 1555965941,
-    "last_content_update" : 1555966141321,
+    "lastKnownWriteTime" : 1556044275,
+    "last_content_update" : 1556044275023,
     "path" : "~/Documents/GitHub/Advanced_R/main_script.R",
     "project_path" : "main_script.R",
     "properties" : {
-        "cursorPosition" : "47,0",
-        "scrollLine" : "38"
+        "cursorPosition" : "173,0",
+        "scrollLine" : "155"
     },
-    "relative_order" : 1,
+    "relative_order" : 4,
     "source_on_save" : false,
     "source_window" : "",
     "type" : "r_source"

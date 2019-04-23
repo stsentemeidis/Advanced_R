@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1556026527631.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "823542548",
+    "id" : "6531F8EC",
+    "lastKnownWriteTime" : 1556026639,
+    "last_content_update" : 1556026639336,
+    "path" : "~/Documents/GitHub/Advanced_R/fct_haversine_dist.R",
+    "project_path" : "fct_haversine_dist.R",
+    "properties" : {
+        "cursorPosition" : "6,56",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
