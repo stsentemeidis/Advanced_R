@@ -7,10 +7,13 @@ source('install_packages.R')
 source('map_api_script.R')
 source('hotspot_coords.R')
 source('analyze_correlations_plots.R')
+source('change_plot_ordinal_vars')
 source('fct_clusters_coord.R')
 source('fct_haversine_dist.R')
 source('fct_distance_from_hotspot.R')
-source('fct_plot_correlation.R')
+source('fct_time_differences.R')
+source('fct_turn_renovated_variable.R')
+
 
 ##################################################################################################
 ################################ EXPLORATION OF THE DATASET ######################################
