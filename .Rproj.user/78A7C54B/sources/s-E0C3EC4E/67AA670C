@@ -5,15 +5,15 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "3901316264",
+    "hash" : "1250405851",
     "id" : "67AA670C",
-    "lastKnownWriteTime" : 1556044275,
-    "last_content_update" : 1556044275023,
+    "lastKnownWriteTime" : 1556056109,
+    "last_content_update" : 1556056109698,
     "path" : "~/Documents/GitHub/Advanced_R/main_script.R",
     "project_path" : "main_script.R",
     "properties" : {
-        "cursorPosition" : "173,0",
-        "scrollLine" : "155"
+        "cursorPosition" : "206,0",
+        "scrollLine" : "180"
     },
     "relative_order" : 4,
     "source_on_save" : false,

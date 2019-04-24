@@ -6,6 +6,7 @@
 source('scripts/install_packages.R')
 source('scripts/fct_conv_coord.R')
 source('scripts/fct_add_distance_edges.R')
+source('scripts/fct_transition_matrix.R')
 source('scripts/fct_is_nan.R')
 source('scripts/fct_euc_dist.R')
 source('scripts/fct_duration.R')
@@ -207,9 +208,9 @@ df_test_full_segments <- add_distance_edges_haversine(df_test_full_segments, 'lo
 
 #### CALCULATE HAVERSINE DISTANCE FROM CITY CENTER CENTROID ####
 df_train_full_segments$entry_distance_centroid <- haversine_dist(df_train_full_segments, 'lon_y_entry_conv', 'lat_x_entry_conv', 'lon_y_conv', 'lat_x_conv', city_center_area_centroid)
-df_test_full_segments$entry_distance_centroid  <- haversine_dist(df_test_full_segments, 'lon_y_entry_conv', 'lat_x_entry_conv', 'lon_y_conv', 'lat_x_conv', city_center_area_centroid)
-df_train_full_segments$exit_distance_centroid  <- haversine_dist(df_train_full_segments, 'lon_y_exit_conv', 'lat_x_exit_conv', 'lon_y_conv', 'lat_x_conv', city_center_area_centroid)
-df_test_full_segments$exit_distance_centroid   <- haversine_dist(df_test_full_segments, 'lon_y_exit_conv', 'lat_x_exit_conv', 'lon_y_conv', 'lat_x_conv', city_center_area_centroid)
+df_test_full_segments$entry_distance_centroid <- haversine_dist(df_test_full_segments, 'lon_y_entry_conv', 'lat_x_entry_conv', 'lon_y_conv', 'lat_x_conv', city_center_area_centroid)
+df_train_full_segments$exit_distance_centroid <- haversine_dist(df_train_full_segments, 'lon_y_exit_conv', 'lat_x_exit_conv', 'lon_y_conv', 'lat_x_conv', city_center_area_centroid)
+df_test_full_segments$exit_distance_centroid <- haversine_dist(df_test_full_segments, 'lon_y_exit_conv', 'lat_x_exit_conv', 'lon_y_conv', 'lat_x_conv', city_center_area_centroid)
 
 gcol_dist_city_entry <- colnames(df_train_full_segments)[(str_detect(colnames(df_train_full_segments), 'distance_edge') | str_detect(colnames(df_train_full_segments), 'distance_centroid'))& str_detect(colnames(df_train_full_segments), 'entry')]
 gcol_dist_city_exit <- colnames(df_train_full_segments)[(str_detect(colnames(df_train_full_segments), 'distance_edge') | str_detect(colnames(df_train_full_segments), 'distance_centroid'))& str_detect(colnames(df_train_full_segments), 'exit')]

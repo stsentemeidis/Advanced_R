@@ -5,7 +5,7 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "906330159",
+    "hash" : "0",
     "id" : "3DC8B2B",
     "lastKnownWriteTime" : 1556025356,
     "last_content_update" : 1556025356725,
@@ -13,7 +13,7 @@
     "project_path" : "install_packages.R",
     "properties" : {
         "cursorPosition" : "59,0",
-        "scrollLine" : "36"
+        "scrollLine" : "0"
     },
     "relative_order" : 3,
     "source_on_save" : false,

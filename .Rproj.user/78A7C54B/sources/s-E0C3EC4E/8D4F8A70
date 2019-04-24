@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1556053052537.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "8D4F8A70",
+    "lastKnownWriteTime" : 6,
+    "last_content_update" : 1556053052537,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "id" : "33bc1bfa346d4d2896160187a0ac0304",
+        "name" : "clustering_coords",
+        "title" : "clustering_coords"
+    },
+    "relative_order" : 8,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "object_explorer"
+}

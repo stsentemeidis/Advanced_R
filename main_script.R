@@ -3,7 +3,7 @@
 df_test  <- read.csv('house_price_test.csv')
 df_train <- read.csv('house_price_train.csv')
 
-source('install.packages.R')
+source('install_packages.R')
 source('fct_clusters_coord.R')
 source('fct_haversine_dist.R')
 ##################################################################################################
@@ -124,7 +124,7 @@ grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
 # 
 # save(TacomaMap, file = 'TacomaMap.rda')
 
-load('data/TacomaMap.rda')
+load('TacomaMap.rda')
 
 ggmap(TacomaMap) +
   labs(x = '', y = '') +
@@ -139,44 +139,88 @@ ggmap(TacomaMap) +
 # Extracting date and month.
 df_train$month <- format(as.Date(df_train$date), "%m")
 df_test$month  <- format(as.Date(df_test$date), "%Y-%m")
-df_train$year  <- format(as.Date(df_train$date), "%Y-%m")
-df_test$year   <- format(as.Date(df_test$date), "%Y-%m")
+df_train$year  <- format(as.Date(df_train$date), "%Y")
+df_test$year   <- format(as.Date(df_test$date), "%Y")
 
 # Time differences between
+df_train$age_when_sold <- 0
+df_train$year <- as.numeric(df_train$year)
+for (i in 1:nrow(df_train)){
+  df_train[i,'age_when_sold'] <- df_train[i,'year'] - df_train[i,'yr_built']
+}
+
+df_train$age <- 0
+df_train$year <- as.numeric(df_train$year)
+for (i in 1:nrow(df_train)){
+  df_train[i,'age'] <- 2019 - df_train[i,'yr_built']
+}
+# Renovated or not
+for (i in 1:nrow(df_train)){
+  if (df_train[i,'yr_renovated'] == 0){
+    df_train[i,'yr_renovated'] <- 'NO'
+  }
+  else{
+    df_train[i,'yr_renovated'] <- 'YES'
+  }
+}
+
+# Changing some numeric to factor variables.
+df_train$grade <- as.factor(df_train$grade)
+table(df_train$grade)
+df_train$view  <- as.factor(df_train$view)
+table(df_train$view)
+df_train$condition <- as.factor(df_train$condition)
+table(df_train$condition)
+df_train$year <- as.factor(df_train$year)
+table(df_train$year)
+df_train$month <- as.factor(df_train$month)
+table(df_train$month)
+
+ys <- ggplot(df_train, aes(x=year, y=price)) +
+  geom_bar(stat='summary', fun.y = "median", fill=color3)+
+  scale_y_continuous(breaks= seq(0, 800000, by=25000), labels = comma) +
+  geom_label(stat = "count", aes(label = ..count.., y = ..count..)) +
+  geom_hline(yintercept=163000, linetype="dashed", color = "red")+
+  theme_tufte(base_size = 5, ticks=F)+
+  theme(plot.margin = unit(c(10,10,10,10),'pt'),
+        axis.title=element_blank(),
+        axis.text = element_text(colour = color2, size = 10, family = font2),
+        axis.text.x = element_text(hjust = 1, size = 10, family = font2),
+        legend.position = 'None',
+        plot.background = element_rect(fill = color1))
+
+ms <- ggplot(df_train, aes(x=month, y=price)) +
+  geom_bar(stat='summary', fun.y = "median", fill=color3)+
+  scale_y_continuous(breaks= seq(0, 800000, by=25000), labels = comma) +
+  geom_label(stat = "count", aes(label = ..count.., y = ..count..)) +
+  geom_hline(yintercept=163000, linetype="dashed", color = "red")+
+  theme_tufte(base_size = 5, ticks=F)+
+  theme(plot.margin = unit(c(10,10,10,10),'pt'),
+        axis.title=element_blank(),
+        axis.text = element_text(colour = color2, size = 10, family = font2),
+        axis.text.x = element_text(hjust = 1, size = 10, family = font2),
+        legend.position = 'None',
+        plot.background = element_rect(fill = color1))
+
+grid.arrange(ys, ms, widths=c(1,2))
 
 # Distances from hot spots (airport, attractions)
 df_train$distance_from_airport <- haversine_dist(df_train, 'long', 'lat', -122.301659, 47.443546)
 df_train$distance_from_zoo_acquarium <- haversine_dist(df_train, 'long', 'lat', -122.434110, 47.245885)
 df_train$distance_from_museum_of_glass <- haversine_dist(df_train, 'long', 'lat', -122.43366, 47.24556)
 df_train$distance_from_train_station <- haversine_dist(df_train, 'long', 'lat', -122.427778, 47.239722)
-df_train$distance_from_university_of_wash <- haversine_dist(df_train, 'long', 'lat', -122.427778, 47.239722)
+df_train$distance_from_university_of_wash <- haversine_dist(df_train, 'long', 'lat', -122.4378, 47.2448)
 df_train$distance_from_community_college <- haversine_dist(df_train, 'long', 'lat', -122.521920, 47.244109)
 df_train$distance_from_university_puget_sound <- haversine_dist(df_train, 'long', 'lat', -122.482893, 47.263680)
 df_train$distance_from_cheney_stadium <- haversine_dist(df_train, 'long', 'lat', -122.498138, 47.238098)
 df_train$distance_from_port <- haversine_dist(df_train, 'long', 'lat', -122.418487, 47.265181)
 
-df_train$origin = paste0(df_train$lat,",",df_train$long)
-
-
-library(XML)
-library(bitops)
-library(RCurl)
-latlon2ft <- function(origin,destination){
-  xml.url <- paste0('http://maps.googleapis.com/maps/api/distancematrix/xml?origins=',origin,'&destinations=',destination,'&mode=driving&sensor=false')
-  xmlfile <- xmlParse(getURL(xml.url))
-  dist <- xmlValue(xmlChildren(xpathApply(xmlfile,"//distance")[[1]])$value)
-  distance <- as.numeric(sub(" km","",dist))
-  ft <- distance/1000 # FROM METER TO FEET
-  return(ft)
-}
-
-df_train$drive_dist_airport <- latlon2ft(origin="47.3719,-122.215",destination="47.245885,-122.434110")
-
 # Clustering coordinates with radius
-clustering_coords <- clusters_coord(df_train[,c('id', 'lat', 'long')], 5, 'lat', 'long')
-clustering_coords <- NA
+clustering_coords <- clusters_coord(df_train[,c('id', 'lat', 'long')], 1, 'lat', 'long')
+unique(clustering_coords[[1]][,2])
 
-# Changing some numeric to factor variables.
+df_train <- merge(df_train, unique(clustering_coords[[1]][,c(1,2)]))
+df_train <- df_train[order(df_train$id),]
 
 # Detecting and fixing skewness. Acceptable test limits (-2,2)
 for (i in colnames(numeric_data_train)){
