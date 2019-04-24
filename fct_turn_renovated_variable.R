@@ -23,6 +23,6 @@ yr_renov <- ggplot(test_df, aes(x=yr_renovated)) +
   theme(plot.margin = unit(c(10,10,10,10),'pt'),
         axis.title=element_blank(),
         axis.text = element_text(colour = color2, size = 10, family = font2),
-        axis.text.x = element_text(hjust = 1, size = 10, family = font2, angle=90),
+        axis.text.x = element_text(hjust = 1, size = 8, family = font2, angle=90),
         legend.position = 'None',
         plot.background = element_rect(fill = color1))
