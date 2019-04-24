@@ -91,70 +91,51 @@ df_train$year  <- format(as.Date(df_train$date), "%Y")
 df_test$year   <- format(as.Date(df_test$date), "%Y")
 
 # Time differences between
-df_train$age_when_sold <- 0
-df_train$year <- as.numeric(df_train$year)
-for (i in 1:nrow(df_train)){
-  df_train[i,'age_when_sold'] <- df_train[i,'year'] - df_train[i,'yr_built']
-}
+df_train <- time_differences(df_train)
+df_test  <- time_differences(df_test)
 
-df_train$age <- 0
-df_train$year <- as.numeric(df_train$year)
-for (i in 1:nrow(df_train)){
-  df_train[i,'age'] <- 2019 - df_train[i,'yr_built']
-}
 # Renovated or not
-for (i in 1:nrow(df_train)){
-  if (df_train[i,'yr_renovated'] == 0){
-    df_train[i,'yr_renovated'] <- 'NO'
-  }
-  else{
-    df_train[i,'yr_renovated'] <- 'YES'
-  }
-}
+df_train <- turn_renovated_variable(df_train)
+df_test  <- turn_renovated_variable(df_test)
+
+yr_renov
+grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Relationship of Sqft_living | Sqft_above",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+
+
 
 # Changing some numeric to factor variables.
-df_train$grade <- as.factor(df_train$grade)
-table(df_train$grade)
-df_train$view  <- as.factor(df_train$view)
-table(df_train$view)
-df_train$condition <- as.factor(df_train$condition)
-table(df_train$condition)
-df_train$year <- as.factor(df_train$year)
-table(df_train$year)
-df_train$month <- as.factor(df_train$month)
-table(df_train$month)
+grid.arrange(grade_factor_plot, condition_factor_plot, view_factor_plot, nrow=1, ncol=3)
+grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Grade Variable",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Condition Variable",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="View Variable",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
 
-ys <- ggplot(df_train, aes(x=year, y=price)) +
-  geom_bar(stat='summary', fun.y = "median", fill=color3)+
-  scale_y_continuous(breaks= seq(0, 800000, by=25000), labels = comma) +
-  geom_label(stat = "count", aes(label = ..count.., y = ..count..)) +
-  geom_hline(yintercept=163000, linetype="dashed", color = "red")+
-  theme_tufte(base_size = 5, ticks=F)+
-  theme(plot.margin = unit(c(10,10,10,10),'pt'),
-        axis.title=element_blank(),
-        axis.text = element_text(colour = color2, size = 10, family = font2),
-        axis.text.x = element_text(hjust = 1, size = 10, family = font2),
-        legend.position = 'None',
-        plot.background = element_rect(fill = color1))
+grid.arrange(year_factor_plot, month_factor_plot, nrow=1, ncol=2)
+grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Year Variable",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Month Variable",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
 
-ms <- ggplot(df_train, aes(x=month, y=price)) +
-  geom_bar(stat='summary', fun.y = "median", fill=color3)+
-  scale_y_continuous(breaks= seq(0, 800000, by=25000), labels = comma) +
-  geom_label(stat = "count", aes(label = ..count.., y = ..count..)) +
-  geom_hline(yintercept=163000, linetype="dashed", color = "red")+
-  theme_tufte(base_size = 5, ticks=F)+
-  theme(plot.margin = unit(c(10,10,10,10),'pt'),
-        axis.title=element_blank(),
-        axis.text = element_text(colour = color2, size = 10, family = font2),
-        axis.text.x = element_text(hjust = 1, size = 10, family = font2),
-        legend.position = 'None',
-        plot.background = element_rect(fill = color1))
-
-grid.arrange(ys, ms, widths=c(1,2))
+grid.arrange(years_price, months_price, nrow=1, ncol=2)
+grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Year | Price Distribution",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Month | Price Distribution",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
 
 # Distances from hot spots (airport, attractions)
 df_train <- distance_from_hotspot(df_train)
-df_test <- distance_from_hotspot(df_test)
+df_test  <- distance_from_hotspot(df_test)
 
 
 # Clustering coordinates with radius
