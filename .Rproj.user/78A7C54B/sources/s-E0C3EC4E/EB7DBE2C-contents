@@ -1,0 +1,39 @@
+test_df <- df_markov_train
+test_train_copy_2 <- data.frame(      hash=character(),
+                                      point_of_interest_id_exit=numeric(),
+                                      point_of_interest_id_entry=numeric(),
+                                      entry_city_center=numeric(),
+                                      exit_city_center=numeric(),
+                                      stringsAsFactors = F)
+
+for (i in 1:991972){
+  
+  if ((is.na(test_df[i,'point_of_interest_id_exit']) == T & is.na(test_df[i+1,'point_of_interest_id_entry']) == T) & test_df[i,'hash'] == test_df[i+1,'hash']){
+    
+    new_row <- data.frame(test_df[i,'hash'], test_df[i,'point_of_interest_id_entry'], test_df[i+1,'point_of_interest_id_exit'], test_df[i,'entry_city_center'], test_df[i+1,'exit_city_center'])
+    test_train_copy_2 <- rbindlist(list(test_train_copy_2, new_row))
+    
+  }
+  else if ((is.na(test_df[i+1,'point_of_interest_id_exit']) == T & is.na(test_df[i,'point_of_interest_id_entry']) == T) & test_df[i,'hash'] == test_df[i+1,'hash']){
+    
+    new_row <- data.frame(test_df[i,'hash'], test_df[i+1,'point_of_interest_id_entry'], test_df[i,'point_of_interest_id_exit'], test_df[i+1,'entry_city_center'], test_df[i,'exit_city_center'])
+    test_train_copy_2 <- rbindlist(list(test_train_copy_2, new_row))
+    
+  }
+  if (i==100000){
+    print('100000 done')}
+  if (i==300000){
+    print('300000 done')}
+  if (i==700000){
+    print('700000 done')}
+  
+}
+
+colnames(test_train_copy_2) <- c("hash", "point_of_interest_id_entry" ,"point_of_interest_id_exit" ,"entry_city_center"  ,"exit_city_center" )
+
+test_df <- rbind(test_df,  test_train_copy_2)
+
+test_df <- test_df[order(test_df$hash),]
+df_markov_train_clean <- subset(test_df,is.na(test_df$point_of_interest_id_entry) == F & is.na(test_df$point_of_interest_id_exit) == F)
+saveRDS(object = df_markov_train_clean, file = 'data/df_markov_train_clean.rda')
+                                

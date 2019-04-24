@@ -1,0 +1,402 @@
+
+#### MAIN SCRIPT ####
+# EY NEWWAVE CHALLENGE 2019
+
+#### PREPARE ENVIRONMENT ####
+source('scripts/install_packages.R')
+source('scripts/fct_conv_coord.R')
+source('scripts/fct_add_distance_edges.R')
+source('scripts/fct_transition_matrix.R')
+source('scripts/fct_is_nan.R')
+source('scripts/fct_euc_dist.R')
+source('scripts/fct_duration.R')
+source('scripts/fct_avg_speed.R')
+source('scripts/fct_check_city_center.R')
+source('scripts/fct_period_flag.R')
+source('scripts/fct_direction.R')
+source('scripts/fct_merge_aggregations.R')
+source('scripts/fct_aggregation.R')
+source('scripts/fct_clusters_coord.R')
+source('scripts/fct_haversine_dist.R')
+source('scripts/fct_add_distance_edges_haversine.R')
+source('scripts/fct_add_distance_clusters_haversine.R')
+
+
+#### LOAD DATASET ####
+df_train <- as.data.frame(read.csv('data/data_train.csv'))
+df_test <- as.data.frame(read.csv('data/data_test.csv'))
+df_sample <- as.data.frame(read.csv('data/sample.csv'))
+
+
+#### DEFINE CITY CENTER AREA ####
+city_center_area <- data.frame(list('x' = c(  3750901.5068,   3770901.5068,   3750901.5068,   3770901.5068),
+                                       'y' = c(-19208905.6133, -19208905.6133, -19268905.6133, -19268905.6133)))
+city_center_area <- conv_coord(city_center_area, 'x', 'y', 3857, 4326, TRUE)
+rownames(city_center_area) <- c('SE', 'NE', 'SW', 'NW')
+city_center_area <- city_center_area[c('NE', 'SE', 'SW', 'NW'),]
+
+city_center_area_centroid <- data.frame(list('x' = c((3770901.5068 - 3750901.5068)/2 + 3750901.5068),
+                                             'y' = c((-19268905.6133+19208905.6133)/2 - 19208905.6133)))
+city_center_area_centroid <- conv_coord(city_center_area_centroid, 'x', 'y', 3857, 4326, TRUE)
+
+
+#### GENERATE MISSING SEGMENTS ####
+# source(prs_filling_routes_train_data.R)
+
+
+#### LOAD PRE-GENERATED DATAFRAMES ####
+df_train_full_segments <- as.data.frame(readRDS('data/data_train_full_routes.rds'))
+df_test_full_segments <- as.data.frame(readRDS('data/data_test_full_routes.rds'))
+
+gcol_id <- colnames(df_train_full_segments)[1:3]
+gcol_time <- colnames(df_train_full_segments)[4:5]
+gcol_velocity <- colnames(df_train_full_segments)[6:8]
+gcol_coord_entry <- colnames(df_train_full_segments)[9:10]
+gcol_coord_exit <- colnames(df_train_full_segments)[11:12]
+
+#### REPLACE NaN WITH NA ####
+df_train_full_segments[is.nan(df_train_full_segments)] <- NA
+df_test_full_segments[is.nan(df_test_full_segments)] <- NA
+
+#### CONVERT CARTESIAN TO LAT/LON ####
+df_train_full_segments <- conv_coord(df_train_full_segments, 'x_entry', 'y_entry', 3857, 4326, TRUE)
+df_train_full_segments <- conv_coord(df_train_full_segments, 'x_exit', 'y_exit', 3857, 4326, TRUE)
+
+df_test_full_segments <- conv_coord(df_test_full_segments, 'x_entry', 'y_entry', 3857, 4326, TRUE)
+
+df_test_full_segments$x_exit[is.na(df_test_full_segments$x_exit)] <- -9999
+df_test_full_segments$y_exit[is.na(df_test_full_segments$y_exit)] <- -9999
+df_test_full_segments <- conv_coord(df_test_full_segments, 'x_exit', 'y_exit', 3857, 4326, TRUE)
+df_test_full_segments$lat_x_exit_conv[df_test_full_segments$x_exit == -9999] <- NA
+df_test_full_segments$lon_y_exit_conv[df_test_full_segments$y_exit == -9999] <- NA
+df_test_full_segments$x_exit[df_test_full_segments$x_exit == -9999] <- NA
+df_test_full_segments$y_exit[df_test_full_segments$y_exit == -9999] <- NA
+
+gcol_coord_entry <- c(gcol_coord_entry, 'lat_x_entry_conv', 'lon_y_entry_conv')
+gcol_coord_exit <- c(gcol_coord_exit, 'lat_x_exit_conv', 'lon_y_exit_conv')
+df_train_full_segments <- df_train_full_segments[,c(gcol_id, gcol_time, gcol_velocity, gcol_coord_entry, gcol_coord_exit)]
+df_test_full_segments <- df_test_full_segments[,c(gcol_id, gcol_time, gcol_velocity, gcol_coord_entry, gcol_coord_exit)]
+
+
+#### ORDER BY HASH AND TIME_ENTRY
+df_train_full_segments <- df_train_full_segments[order(df_train_full_segments$hash, df_train_full_segments$time_entry),]
+df_test_full_segments <- df_test_full_segments[order(df_test_full_segments$hash, df_test_full_segments$time_entry),]
+rownames(df_train_full_segments) <- NULL
+rownames(df_test_full_segments) <- NULL
+
+
+#### FIND POINTS OF INTEREST ####
+entry_points <- df_train_full_segments[,c('lat_x_entry_conv', 'lon_y_entry_conv')]
+names(entry_points) <- c('lat', 'lon')
+exit_points <- df_train_full_segments[,c('lat_x_exit_conv', 'lon_y_exit_conv')]
+names(exit_points) <- c('lat', 'lon')
+train_points <- rbind(entry_points, exit_points)
+train_points_unique <- unique(train_points)
+
+# r_to_calculate <- c(3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9) #0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 
+# for (r in r_to_calculate){
+#   assign(paste0('list_results_', r), clusters_coord(train_points_unique, r, 'lat', 'lon'))
+#   saveRDS(get(paste0('list_results_', r)), paste0('data/list_results_with_clusters_', r, '.RDS'))
+#   assign(paste0('points_with_clusters_', r), get(paste0('list_results_', r))[[1]])
+#   assign(paste0('clusters_', r), get(paste0('list_results_', r))[[2]])
+#   assign(paste0('df_train_full_segments_merged_', r), merge(as.data.table(df_train_full_segments), as.data.table(get(paste0('list_results_', r))[[1]][,c('lat', 'lon', 'cluster_id', 'cluster_lat', 'cluster_lon')]),
+#                                                            by.x= c('lat_x_entry_conv', 'lon_y_entry_conv'), by.y= c('lat', 'lon'),
+#                                                            all.x = TRUE))
+#   assign(paste0('df_train_full_segments_merged_', r), merge(as.data.table(get(paste0('df_train_full_segments_merged_', r))), as.data.table(get(paste0('list_results_', r))[[1]][,c('lat', 'lon', 'cluster_id', 'cluster_lat', 'cluster_lon')]),
+#                                            by.x= c('lat_x_exit_conv', 'lon_y_exit_conv'), by.y= c('lat', 'lon'),
+#                                            all.x = TRUE, suffixes = c('_entry', '_exit')))
+#   assign(paste0('df_train_full_segments_merged_', r), get(paste0('df_train_full_segments_merged_', r))[order(get(paste0('df_train_full_segments_merged_', r))$hash, get(paste0('df_train_full_segments_merged_', r))$time_entry), ])
+#   saveRDS(get(paste0('df_train_full_segments_merged_', r)), paste0('data/df_train_full_segments_with_clusters_', r, '.RDS'))
+# }
+
+r_to_load <- c(2.7)
+for (r in r_to_load){
+  assign(paste0('list_results_', r), readRDS(paste0('data/list_results_with_clusters_', r, '.RDS')))
+  assign(paste0('points_with_clusters_', r), get(paste0('list_results_', r))[[1]])
+  assign(paste0('clusters_', r), get(paste0('list_results_', r))[[2]])
+  assign(paste0('df_train_full_segments_merged_', r),  as.data.frame(readRDS(paste0('data/df_train_full_segments_with_clusters_', r, '.RDS'))))
+}
+
+
+# #### COMPARE THE NUMBER OF CLUSTERS BY RADIUS
+# radius <- c(1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4, 5, 6, 7)
+# num_clusters <- c()
+# for (i in radius){
+#   num_clusters <- c(num_clusters, get(paste0('list_results_', i))[[3]]$num_clusters)
+# }
+# count_clusters <- data.frame(radius, num_clusters)
+# ggplot(count_clusters) + geom_point(data = count_clusters, aes(x = radius, y = num_clusters))
+
+
+#### SELECT THE RADIUS TO USE ####
+r = 2.7 # In kilometers
+list_results <- get(paste0('list_results_', r))
+out <- get(paste0('list_results_', r))[[3]]
+points_with_clusters <- get(paste0('points_with_clusters_', r))
+points_with_clusters$cluster_id <- as.factor(points_with_clusters$cluster_id)
+clusters <- get(paste0('clusters_', r))
+df_train_full_segments_merged <- get(paste0('df_train_full_segments_merged_', r))
+
+df_train_full_segments <- df_train_full_segments_merged
+
+gcol_cluster_entry <- colnames(df_train_full_segments)[str_detect(colnames(df_train_full_segments), 'cluster') & str_detect(colnames(df_train_full_segments), 'entry')]
+gcol_cluster_exit <- colnames(df_train_full_segments)[str_detect(colnames(df_train_full_segments), 'cluster') & str_detect(colnames(df_train_full_segments), 'exit')]
+df_train_full_segments <- df_train_full_segments[,c(gcol_id, gcol_time, gcol_velocity, gcol_coord_entry, gcol_coord_exit, gcol_cluster_entry, gcol_cluster_exit)]
+
+
+### HOW TO FIND THE CLUSTER POINTS FOR TEST
+# Calculate distances with each cluster centroid
+
+df_train_full_segments <- add_distance_clusters_haversine(df_train_full_segments, 'lon_y_entry_conv', 'lat_x_entry_conv',
+                                                          clusters, 'cluster_lon', 'cluster_lat', 'cluster_id',
+                                                          suffixe = '_entry', radius = r)
+df_train_full_segments <- add_distance_clusters_haversine(df_train_full_segments, 'lon_y_exit_conv', 'lat_x_exit_conv',
+                                                          clusters, 'cluster_lon', 'cluster_lat', 'cluster_id',
+                                                          suffixe = '_exit', radius = r)
+
+gcol_dist_cluster_entry <- colnames(df_train_full_segments)[str_detect(colnames(df_train_full_segments), 'distance_cluster') & str_detect(colnames(df_train_full_segments), 'entry')]
+gcol_dist_cluster_exit <- colnames(df_train_full_segments)[str_detect(colnames(df_train_full_segments), 'distance_cluster') & str_detect(colnames(df_train_full_segments), 'exit')]
+gcol_poi_entry <- colnames(df_train_full_segments)[str_detect(colnames(df_train_full_segments), 'point_of_interest') & str_detect(colnames(df_train_full_segments), 'entry')]
+gcol_poi_exit <- colnames(df_train_full_segments)[str_detect(colnames(df_train_full_segments), 'point_of_interest') & str_detect(colnames(df_train_full_segments), 'exit')]
+df_train_full_segments <- df_train_full_segments[,c(gcol_id, gcol_time, gcol_velocity, gcol_coord_entry, gcol_coord_exit, gcol_poi_entry, gcol_poi_exit, gcol_dist_cluster_entry, gcol_dist_cluster_exit, gcol_cluster_entry, gcol_cluster_exit)]
+
+df_test_full_segments <- add_distance_clusters_haversine(df_test_full_segments, 'lon_y_entry_conv', 'lat_x_entry_conv',
+                                                          clusters, 'cluster_lon', 'cluster_lat', 'cluster_id',
+                                                          suffixe = '_entry', radius = r)
+df_test_full_segments_with_na <- df_test_full_segments[is.na(df_test_full_segments$lon_y_exit_conv),]
+df_test_full_segments_no_na <- add_distance_clusters_haversine(df_test_full_segments[!is.na(df_test_full_segments$lon_y_exit_conv),], 'lon_y_exit_conv', 'lat_x_exit_conv',
+                                                          clusters, 'cluster_lon', 'cluster_lat', 'cluster_id',
+                                                          suffixe = '_exit', radius = r)
+df_test_full_segments <- rbind.fill(df_test_full_segments_with_na, df_test_full_segments_no_na)
+df_test_full_segments <- df_test_full_segments[,c(gcol_id, gcol_time, gcol_velocity, gcol_coord_entry, gcol_coord_exit, gcol_poi_entry, gcol_poi_exit, gcol_dist_cluster_entry, gcol_dist_cluster_exit)]
+
+
+#### ORDER BY HASH AND TIME_ENTRY
+df_train_full_segments <- df_train_full_segments[order(df_train_full_segments$hash, df_train_full_segments$time_entry),]
+df_test_full_segments <- df_test_full_segments[order(df_test_full_segments$hash, df_test_full_segments$time_entry),]
+rownames(df_train_full_segments) <- NULL
+rownames(df_test_full_segments) <- NULL
+
+
+#### REMOVE SINGLE POINT SEGMENTS ####
+df_train_full_segments <- df_train_full_segments[(is.na(df_train_full_segments$x_exit)) | (df_train_full_segments$time_entry != df_train_full_segments$time_exit),]
+df_test_full_segments <- df_test_full_segments[(is.na(df_test_full_segments$x_exit)) | (df_test_full_segments$time_entry != df_test_full_segments$time_exit),]
+
+
+# #### CALCULCATE EUCLIDIAN DISTANCES FROM CITY CENTER EDGES ####
+# df_train_full_segments <- add_distance_edges(df_train_full_segments, 'x_entry', 'y_entry', city_center_area, 'x', 'y')
+# df_train_full_segments <- add_distance_edges(df_train_full_segments, 'x_exit', 'y_exit', city_center_area, 'x', 'y')
+# 
+# df_test_full_segments <- add_distance_edges(df_test_full_segments, 'x_entry', 'y_entry', city_center_area, 'x', 'y')
+# df_test_full_segments <- add_distance_edges(df_test_full_segments, 'x_exit', 'y_exit', city_center_area, 'x', 'y')
+
+
+# #### CALCULATE EUCLIDIAN DISTANCE FROM CITY CENTER CENTROID ####
+# df_train_full_segments$entry_distance_centroid <- euc_dist(df_train_full_segments, 'x_entry', 'y_entry', 'x', 'y', city_center_area_centroid)
+# df_test_full_segments$entry_distance_centroid <- euc_dist(df_test_full_segments, 'x_entry', 'y_entry', 'x', 'y', city_center_area_centroid)
+# df_train_full_segments$exit_distance_centroid <- euc_dist(df_train_full_segments, 'x_exit', 'y_exit', 'x', 'y', city_center_area_centroid)
+# df_test_full_segments$exit_distance_centroid <- euc_dist(df_test_full_segments, 'x_exit', 'y_exit', 'x', 'y', city_center_area_centroid)
+
+
+#### CALCULCATE HAVERSINE DISTANCES FROM CITY CENTER EDGES ####
+df_train_full_segments <- add_distance_edges_haversine(df_train_full_segments, 'lon_y_entry_conv', 'lat_x_entry_conv', city_center_area, 'lon_y_conv', 'lat_x_conv')
+df_train_full_segments <- add_distance_edges_haversine(df_train_full_segments, 'lon_y_exit_conv', 'lat_x_exit_conv', city_center_area, 'lon_y_conv', 'lat_x_conv')
+
+df_test_full_segments <- add_distance_edges_haversine(df_test_full_segments, 'lon_y_entry_conv', 'lat_x_entry_conv', city_center_area, 'lon_y_conv', 'lat_x_conv')
+df_test_full_segments <- add_distance_edges_haversine(df_test_full_segments, 'lon_y_exit_conv', 'lat_x_exit_conv', city_center_area, 'lon_y_conv', 'lat_x_conv')
+
+
+#### CALCULATE HAVERSINE DISTANCE FROM CITY CENTER CENTROID ####
+df_train_full_segments$entry_distance_centroid <- haversine_dist(df_train_full_segments, 'lon_y_entry_conv', 'lat_x_entry_conv', 'lon_y_conv', 'lat_x_conv', city_center_area_centroid)
+df_test_full_segments$entry_distance_centroid <- haversine_dist(df_test_full_segments, 'lon_y_entry_conv', 'lat_x_entry_conv', 'lon_y_conv', 'lat_x_conv', city_center_area_centroid)
+df_train_full_segments$exit_distance_centroid <- haversine_dist(df_train_full_segments, 'lon_y_exit_conv', 'lat_x_exit_conv', 'lon_y_conv', 'lat_x_conv', city_center_area_centroid)
+df_test_full_segments$exit_distance_centroid <- haversine_dist(df_test_full_segments, 'lon_y_exit_conv', 'lat_x_exit_conv', 'lon_y_conv', 'lat_x_conv', city_center_area_centroid)
+
+gcol_dist_city_entry <- colnames(df_train_full_segments)[(str_detect(colnames(df_train_full_segments), 'distance_edge') | str_detect(colnames(df_train_full_segments), 'distance_centroid'))& str_detect(colnames(df_train_full_segments), 'entry')]
+gcol_dist_city_exit <- colnames(df_train_full_segments)[(str_detect(colnames(df_train_full_segments), 'distance_edge') | str_detect(colnames(df_train_full_segments), 'distance_centroid'))& str_detect(colnames(df_train_full_segments), 'exit')]
+df_train_full_segments <- df_train_full_segments[,c(gcol_id, gcol_time, gcol_velocity, gcol_coord_entry, gcol_coord_exit, gcol_poi_entry, gcol_poi_exit,
+                                                    gcol_dist_city_entry, gcol_dist_city_exit, gcol_dist_cluster_entry, gcol_dist_cluster_exit,
+                                                    gcol_cluster_entry, gcol_cluster_exit)]
+df_test_full_segments <- df_test_full_segments[,c(gcol_id, gcol_time, gcol_velocity, gcol_coord_entry, gcol_coord_exit, gcol_poi_entry, gcol_poi_exit,
+                                                    gcol_dist_city_entry, gcol_dist_city_exit, gcol_dist_cluster_entry, gcol_dist_cluster_exit)]
+
+
+#### ADD TO_CENTER FLAG ####
+df_train_full_segments$to_center <- NA
+df_test_full_segments$to_center <- NA
+df_train_full_segments[!is.na(df_train_full_segments$exit_distance_centroid) & (df_train_full_segments$entry_distance_centroid > df_train_full_segments$exit_distance_centroid),'to_center'] <- 1
+df_test_full_segments[!is.na(df_test_full_segments$exit_distance_centroid) & (df_test_full_segments$entry_distance_centroid > df_test_full_segments$exit_distance_centroid),'to_center'] <- 1
+df_train_full_segments[!is.na(df_train_full_segments$exit_distance_centroid) & (df_train_full_segments$entry_distance_centroid < df_train_full_segments$exit_distance_centroid),'to_center'] <- 0
+df_test_full_segments[!is.na(df_test_full_segments$exit_distance_centroid) & (df_test_full_segments$entry_distance_centroid < df_test_full_segments$exit_distance_centroid),'to_center'] <- 0
+
+
+#### ADD SEGMENT_LENGTH ####
+df_train_full_segments$segment_length <- euc_dist(df_train_full_segments, 'x_entry', 'y_entry', 'x_exit', 'y_exit')
+df_test_full_segments$segment_length <- euc_dist(df_test_full_segments, 'x_entry', 'y_entry', 'x_exit', 'y_exit')
+
+
+#### ADD SEGMENT DIRECTION ####
+df_train_full_segments$direction <- direction(df_train_full_segments, 'x_entry', 'y_entry', 'x_exit', 'y_exit')
+df_test_full_segments$direction <- direction(df_test_full_segments, 'x_entry', 'y_entry', 'x_exit', 'y_exit')
+
+
+#### ADD DURATION ####
+df_train_full_segments$time_entry <- chron(times = df_train_full_segments$time_entry)
+df_train_full_segments$time_exit <- chron(times = df_train_full_segments$time_exit)
+df_test_full_segments$time_entry <- chron(times = df_test_full_segments$time_entry)
+df_test_full_segments$time_exit <- chron(times = df_test_full_segments$time_exit)
+df_train_full_segments$duration <- duration(df_train_full_segments, 'time_entry', 'time_exit')
+df_test_full_segments$duration <- duration(df_test_full_segments, 'time_entry', 'time_exit')
+
+
+#### ADD AVERAGE SPEED ####
+df_train_full_segments$avg_speed <- avg_speed(df_train_full_segments, 'segment_length','duration')
+df_test_full_segments$avg_speed <- avg_speed(df_test_full_segments, 'segment_length','duration')
+
+gcol_segment <- c('to_center', 'direction', 'segment_length', 'duration', 'avg_speed')
+df_train_full_segments <- df_train_full_segments[,c(gcol_id, gcol_time, gcol_velocity, gcol_coord_entry, gcol_coord_exit, gcol_poi_entry, gcol_poi_exit, gcol_segment,
+                                                    gcol_dist_city_entry, gcol_dist_city_exit, gcol_dist_cluster_entry, gcol_dist_cluster_exit,
+                                                    gcol_cluster_entry, gcol_cluster_exit)]
+df_test_full_segments <- df_test_full_segments[,c(gcol_id, gcol_time, gcol_velocity, gcol_coord_entry, gcol_coord_exit, gcol_poi_entry, gcol_poi_exit, gcol_segment,
+                                                    gcol_dist_city_entry, gcol_dist_city_exit, gcol_dist_cluster_entry, gcol_dist_cluster_exit)]
+
+
+#### ADD CITY CENTER FLAG ####
+df_train_full_segments$entry_city_center <- check_city_center(df_train_full_segments, 'x_entry', 'y_entry', city_center_area)
+df_test_full_segments$entry_city_center <- check_city_center(df_test_full_segments, 'x_entry', 'y_entry', city_center_area)
+df_train_full_segments$exit_city_center <- check_city_center(df_train_full_segments, 'x_exit', 'y_exit', city_center_area)
+df_test_full_segments$exit_city_center <- check_city_center(df_test_full_segments, 'x_exit', 'y_exit', city_center_area)
+
+gcol_target <- c('entry_city_center', 'exit_city_center')
+df_train_full_segments <- df_train_full_segments[,c(gcol_id, gcol_time, gcol_velocity, gcol_coord_entry, gcol_coord_exit, gcol_target, gcol_poi_entry, gcol_poi_exit, gcol_segment,
+                                                    gcol_dist_city_entry, gcol_dist_city_exit, gcol_dist_cluster_entry, gcol_dist_cluster_exit,
+                                                    gcol_cluster_entry, gcol_cluster_exit)]
+df_test_full_segments <- df_test_full_segments[,c(gcol_id, gcol_time, gcol_velocity, gcol_coord_entry, gcol_coord_exit, gcol_target, gcol_poi_entry, gcol_poi_exit, gcol_segment,
+                                                  gcol_dist_city_entry, gcol_dist_city_exit, gcol_dist_cluster_entry, gcol_dist_cluster_exit)]
+
+
+#### ORDER BY HASH AND TIME_ENTRY
+df_train_full_segments <- df_train_full_segments[order(df_train_full_segments$hash, df_train_full_segments$time_entry),]
+df_test_full_segments <- df_test_full_segments[order(df_test_full_segments$hash, df_test_full_segments$time_entry),]
+rownames(df_train_full_segments) <- NULL
+rownames(df_test_full_segments) <- NULL
+
+
+#### ADD PERIOD FLAGS ####
+df_train_full_segments <- period_flag(df_train_full_segments, 'time_entry', 'time_exit', period_in_minutes = 60)
+df_test_full_segments <- period_flag(df_test_full_segments, 'time_entry', 'time_exit', period_in_minutes = 60)
+
+gcol_periods <- colnames(df_train_full_segments)[str_detect(colnames(df_train_full_segments), 'period')]
+df_train_full_segments <- df_train_full_segments[,c(gcol_id, gcol_time, gcol_velocity, gcol_coord_entry, gcol_coord_exit, gcol_target, gcol_poi_entry, gcol_poi_exit, gcol_segment,
+                                                    gcol_dist_city_entry, gcol_dist_city_exit, gcol_dist_cluster_entry, gcol_dist_cluster_exit, gcol_periods,
+                                                    gcol_cluster_entry, gcol_cluster_exit)]
+df_test_full_segments <- df_test_full_segments[,c(gcol_id, gcol_time, gcol_velocity, gcol_coord_entry, gcol_coord_exit, gcol_target, gcol_poi_entry, gcol_poi_exit, gcol_segment,
+                                                  gcol_dist_city_entry, gcol_dist_city_exit, gcol_dist_cluster_entry, gcol_dist_cluster_exit, gcol_periods)]
+
+# df_train_full_segments_sample <- df_train_full_segments[1:1000,]
+# saveRDS(df_train_full_segments_sample, 'data/df_train_full_segments_sample.RDS')
+
+# #### AGGREGATE ON HASH BY PERIOD ####
+# 
+# list_agg_train <- aggregation(df_train_full_segments, gcol_periods)
+# list_agg_test <- aggregation(df_test_full_segments, gcol_periods)
+# 
+# df_train_agg <- merge_aggregations(list_agg_train, 'hash')
+# df_test_agg <- merge_aggregations(list_agg_test, 'hash')
+# 
+# # colnames(df_train_agg)
+
+
+#### MARKOV CHAIN PREPARATION ####
+df_markov_train <- df_train_full_segments[(!is.na(df_train_full_segments$point_of_interest_id_entry)) | (!is.na(df_train_full_segments$point_of_interest_id_exit)), c("hash", "point_of_interest_id_entry", "point_of_interest_id_exit", "entry_city_center", "exit_city_center")]
+
+
+#### MAP ####
+### API SETTINGS
+# api <- readLines('google.api') # Text file with the API key
+# register_google(key = api)
+# getOption("ggmap")
+# 
+# AtlantaMap <- get_map(location = c(lon = city_center_area_centroid$lon_y_conv, lat = city_center_area_centroid$lat_x_conv),
+#                       maptype = "toner-hybrid",
+#                       zoom = 11,
+#                       filename="data/AtlantaMap_temp")
+# save(AtlantaMap, file = 'data/AtlantaMap.rda')
+
+load('data/AtlantaMap.rda')
+
+# #MAP WITH CLUSTERS
+# ggmap(AtlantaMap) +
+#   labs(x = '', y = '') +
+#   theme(legend.position = 'none') +
+#   # scale_fill_manual(values = c('green')) +
+#   # scale_color_manual(values = c('green')) +
+#   scale_color_hue() +
+#   scale_fill_hue() +
+#   # geom_point(data = df_train_full_segments[1:100,], aes(x = lon_y_exit_conv, y = lat_x_exit_conv), size = 0.5, colour = 'red') + 
+#   geom_point(data = points_with_clusters, aes(x = lon, y = lat, color = cluster_id), size = 0.5) +
+#   geom_point(data = clusters, aes(x = cluster_lon, y = cluster_lat), size = 3, colour = 'red') + 
+#   # geom_segment(data = df_train_full_segments[df_train_full_segments$cluster_id_exit == 4 & df_train_full_segments$cluster_id_entry == 11,], aes(x = lon_y_entry_conv, y = lat_x_entry_conv, xend = lon_y_exit_conv, yend = lat_x_exit_conv, colour = hash), arrow=arrow(length = unit(0.1,'cm'))) +
+#   geom_rect(data = city_center_area, inherit.aes = FALSE, mapping=aes(xmin = city_center_area['SW','lon_y_conv'], xmax = city_center_area['NE','lon_y_conv'], ymin = city_center_area['SE','lat_x_conv'], ymax = city_center_area['NW','lat_x_conv']), colour = 'green', fill = 'green', alpha = 0.1) +
+#   annotate("text", x=city_center_area_centroid$lon_y_conv,y=city_center_area_centroid$lat_x_conv,label="City Center",colour="black",size=3, angle = 90) +
+#   annotate("text", x=city_center_area['NE','lon_y_conv'],y=city_center_area['NE','lat_x_conv'],label="NE",colour="black",size=3) +
+#   annotate("text", x=city_center_area['NW','lon_y_conv'],y=city_center_area['NW','lat_x_conv'],label="NW",colour="black",size=3) +
+#   annotate("text", x=city_center_area['SE','lon_y_conv'],y=city_center_area['SE','lat_x_conv'],label="SE",colour="black",size=3) +
+#   annotate("text", x=city_center_area['SW','lon_y_conv'],y=city_center_area['SW','lat_x_conv'],label="SW",colour="black",size=3)
+
+#MAP WITH POINTS OF INTEREST
+df_train_full_segments$point_of_interest_id_entry <- as.factor(df_train_full_segments$point_of_interest_id_entry)
+
+ggmap(AtlantaMap) +
+  labs(x = '', y = '') +
+  theme(legend.position = 'none') +
+  # scale_fill_manual(values = c('green')) +
+  # scale_color_manual(values = c('green')) +
+  scale_color_hue() +
+  scale_fill_hue() +
+  geom_point(data = df_train_full_segments, aes(x = lon_y_entry_conv, y = lat_x_entry_conv, color=point_of_interest_id_entry), size = 0.5) +
+  # geom_point(data = points_with_clusters, aes(x = lon, y = lat, color = cluster_id), size = 0.5) +
+  geom_point(data = clusters, aes(x = cluster_lon, y = cluster_lat), size = 3, colour = 'red') +
+  # geom_segment(data = df_train_full_segments[df_train_full_segments$cluster_id_exit == 4 & df_train_full_segments$cluster_id_entry == 11,], aes(x = lon_y_entry_conv, y = lat_x_entry_conv, xend = lon_y_exit_conv, yend = lat_x_exit_conv, colour = hash), arrow=arrow(length = unit(0.1,'cm'))) +
+  geom_rect(data = city_center_area, inherit.aes = FALSE, mapping=aes(xmin = city_center_area['SW','lon_y_conv'], xmax = city_center_area['NE','lon_y_conv'], ymin = city_center_area['SE','lat_x_conv'], ymax = city_center_area['NW','lat_x_conv']), colour = 'green', fill = 'green', alpha = 0.1) +
+  annotate("text", x=city_center_area_centroid$lon_y_conv,y=city_center_area_centroid$lat_x_conv,label="City Center",colour="black",size=3, angle = 90) +
+  annotate("text", x=city_center_area['NE','lon_y_conv'],y=city_center_area['NE','lat_x_conv'],label="NE",colour="black",size=3) +
+  annotate("text", x=city_center_area['NW','lon_y_conv'],y=city_center_area['NW','lat_x_conv'],label="NW",colour="black",size=3) +
+  annotate("text", x=city_center_area['SE','lon_y_conv'],y=city_center_area['SE','lat_x_conv'],label="SE",colour="black",size=3) +
+  annotate("text", x=city_center_area['SW','lon_y_conv'],y=city_center_area['SW','lat_x_conv'],label="SW",colour="black",size=3)
+
+# MAP WITH SEGMENTS
+ggmap(AtlantaMap) +
+  labs(x = '', y = '') +
+  theme(legend.position = 'none') +
+  # scale_fill_manual(values = c('green')) +
+  # scale_color_manual(values = c('green')) +
+  scale_color_hue() +
+  scale_fill_hue() +
+  # geom_point(data = df_train_full_segments[1:100,], aes(x = lon_y_exit_conv, y = lat_x_exit_conv), size = 0.5, colour = 'red') + 
+  # geom_point(data = points_with_clusters, aes(x = lon, y = lat, color = cluster_id), size = 0.5) + 
+  # geom_point(data = clusters, aes(x = cluster_lon, y = cluster_lat), size = 3, colour = 'red') + 
+  geom_segment(data = df_train_full_segments[15:16,], aes(x = lon_y_entry_conv, y = lat_x_entry_conv, xend = lon_y_exit_conv, yend = lat_x_exit_conv, colour = hash), arrow=arrow(length = unit(0.1,'cm'))) +
+  geom_rect(data = city_center_area, inherit.aes = FALSE, mapping=aes(xmin = city_center_area['SW','lon_y_conv'], xmax = city_center_area['NE','lon_y_conv'], ymin = city_center_area['SE','lat_x_conv'], ymax = city_center_area['NW','lat_x_conv']), colour = 'green', fill = 'green', alpha = 0.1) +
+  annotate("text", x=city_center_area_centroid$lon_y_conv,y=city_center_area_centroid$lat_x_conv,label="City Center",colour="black",size=3, angle = 90) +
+  annotate("text", x=city_center_area['NE','lon_y_conv'],y=city_center_area['NE','lat_x_conv'],label="NE",colour="black",size=3) +
+  annotate("text", x=city_center_area['NW','lon_y_conv'],y=city_center_area['NW','lat_x_conv'],label="NW",colour="black",size=3) +
+  annotate("text", x=city_center_area['SE','lon_y_conv'],y=city_center_area['SE','lat_x_conv'],label="SE",colour="black",size=3) +
+  annotate("text", x=city_center_area['SW','lon_y_conv'],y=city_center_area['SW','lat_x_conv'],label="SW",colour="black",size=3)
+
+# # DENSITY MAP
+# ggmap(AtlantaMap) +
+#   labs(x = '', y = '') +
+#   theme(legend.position = 'none') +
+#   geom_point(data = df_train_full_segments, aes(x = lon_y_exit_conv, y = lat_x_exit_conv), size = 0.5, colour = 'red') +
+#   stat_density2d(data = df_train_full_segments, aes(x = lon_y_exit_conv, y = lat_x_exit_conv, fill = ..level..), geom = 'polygon', bins = 30) +
+#   geom_rect(data = city_center_area, inherit.aes = FALSE, mapping=aes(xmin = city_center_area['SW','lon_y_conv'], xmax = city_center_area['NE','lon_y_conv'], ymin = city_center_area['SE','lat_x_conv'], ymax = city_center_area['NW','lat_x_conv']), colour = 'green', fill = 'green', alpha = 0.1) +
+#   annotate("text", x=city_center_area_centroid$lon_y_conv,y=city_center_area_centroid$lat_x_conv,label="City Center",colour="black",size=0.1, angle = 90) +
+#   annotate("text", x=city_center_area['NE','lon_y_conv'],y=city_center_area['NE','lat_x_conv'],label="NE",colour="black",size=3) +
+#   annotate("text", x=city_center_area['NW','lon_y_conv'],y=city_center_area['NW','lat_x_conv'],label="NW",colour="black",size=3) +
+#   annotate("text", x=city_center_area['SE','lon_y_conv'],y=city_center_area['SE','lat_x_conv'],label="SE",colour="black",size=3) +
+#   annotate("text", x=city_center_area['SW','lon_y_conv'],y=city_center_area['SW','lat_x_conv'],label="SW",colour="black",size=3)
+
+
+
+

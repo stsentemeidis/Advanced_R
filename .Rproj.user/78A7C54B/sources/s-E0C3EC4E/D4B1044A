@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1556136516114.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "D4B1044A",
+    "lastKnownWriteTime" : 1556139154,
+    "last_content_update" : 1556139154920,
+    "path" : "~/Documents/GitHub/Advanced_R/change_plot_ordinal_vars.R",
+    "project_path" : "change_plot_ordinal_vars.R",
+    "properties" : {
+        "cursorPosition" : "0,0",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

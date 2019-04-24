@@ -1,5 +1,5 @@
-
-### THIS SCRIPT CREATES THE FUNCTION ADD_DISTANCE_EDGES
+##################################################################################################
+################### THIS SCRIPT CREATES THE FUNCTION ADD_DISTANCE_EDGES ##########################
 
 #### FUNCTION CLUSTERS_COORD ####
 clusters_coord <- function(df, r, lat, lon){

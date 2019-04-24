@@ -1,0 +1,20 @@
+##################################################################################################
+################################ STORE HOTSPOT COORDINATES #######################################
+
+hotspots_coordinates <- data.frame(   name = character(),
+                                      long=numeric(),
+                                      lat=numeric(),
+                                      stringsAsFactors = F)
+
+hotspots_coordinates[1,] <- c('airport',                -122.301659, 47.443546)
+hotspots_coordinates[2,] <- c('zoo_acquarium',          -122.434110, 47.245885)
+hotspots_coordinates[3,] <- c('museum_of_glass',        -122.43366, 47.24556)
+hotspots_coordinates[4,] <- c('train_station',          -122.427778, 47.239722)
+hotspots_coordinates[5,] <- c('university_of_wash',     -122.4378, 47.2448)
+hotspots_coordinates[6,] <- c('community_college',      -122.521920, 47.244109)
+hotspots_coordinates[7,] <- c('university_puget_sound', -122.482893, 47.263680)
+hotspots_coordinates[8,] <- c('cheney_stadium',         -122.498138, 47.238098)
+hotspots_coordinates[9,] <- c('port',                   -122.418487, 47.265181)
+
+hotspots_coordinates$long <- as.numeric(hotspots_coordinates$long)
+hotspots_coordinates$lat  <- as.numeric(hotspots_coordinates$lat)

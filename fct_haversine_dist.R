@@ -1,5 +1,5 @@
-
-### THIS SCRIPT CREATES THE FUNCTION HAVERSINE_DIST
+##################################################################################################
+###################### THIS SCRIPT CREATES THE FUNCTION HAVERSINE_DIST ###########################
 
 #### FUNCTION HAVERSINE_DIST ####
 haversine_dist <- function(df, lon1, lat1, lon2, lat2, df2 = NULL) {

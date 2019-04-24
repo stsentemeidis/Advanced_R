@@ -1,0 +1,223 @@
+# Reading the Data
+df_1 <-readRDS('data/list_results_with_clusters_1.RDS')
+df_2 <-readRDS('data/list_results_with_clusters_2.RDS')
+df_3 <-readRDS('data/list_results_with_clusters_3.RDS')
+df_4 <-readRDS('data/list_results_with_clusters_4.RDS')
+df_5 <-readRDS('data/list_results_with_clusters_5.RDS')
+df_6 <-readRDS('data/list_results_with_clusters_6.RDS')
+df_7 <-readRDS('data/list_results_with_clusters_7.RDS')
+
+
+# Palette Colour
+color1 = 'black'
+color2 = 'white'
+color3 = 'gold1'
+color4 = 'darkorchid3'
+font1 = 'Impact'
+font2 = 'Helvetica'
+####################################################################################################
+####################################################################################################
+freq_cluster_1 <- as.data.frame(table(df_1[[1]][,'cluster_id']))
+cluster_id_1   <- as.data.frame(df_1[[2]])
+freq_cluster_1 <- cbind(freq_cluster_1, cluster_id_1)
+freq_cluster_1 <- freq_cluster_1[order(freq_cluster_1$Freq, decreasing = T), ]
+colnames(freq_cluster_1) <- c('cluster_id', 'count', 'cluster_lat', 'cluster_lon')
+
+ggplot(data=freq_cluster_1, aes(x=reorder(cluster_id, -count), y=count)) + 
+  geom_col(col=color3,aes(fill=color3), fill = color3) +
+  theme_tufte(base_size = 5, ticks=F)+
+  theme(plot.margin = unit(c(10,10,10,10),'pt'),
+        axis.title=element_blank(),
+        axis.text = element_text(colour = color2, size = 10, family = font2),
+        axis.text.x = element_text(hjust = 1, size = 10, family = font2),
+        legend.position = 'None',
+        plot.background = element_rect(fill = color1))+ scale_y_continuous(labels = comma)
+grid.text(unit(0.7, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Clusters Radius 1",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+####################################################################################################
+####################################################################################################
+freq_cluster_2 <- as.data.frame(table(df_2[[1]][,'cluster_id']))
+cluster_id_2   <- as.data.frame(df_2[[2]])
+freq_cluster_2 <- cbind(freq_cluster_2, cluster_id_2)
+freq_cluster_2 <- freq_cluster_2[order(freq_cluster_2$Freq, decreasing = T), ]
+colnames(freq_cluster_2) <- c('cluster_id', 'count', 'cluster_lat', 'cluster_lon')
+
+ggplot(data=freq_cluster_2, aes(x=reorder(cluster_id, -count), y=count)) + 
+  geom_col(col=color3,aes(fill=color3), fill = color3) +
+  theme_tufte(base_size = 5, ticks=F)+
+  theme(plot.margin = unit(c(10,10,10,10),'pt'),
+        axis.title=element_blank(),
+        axis.text = element_text(colour = color2, size = 10, family = font2),
+        axis.text.x = element_text(hjust = 1, size = 8, family = font2),
+        legend.position = 'None',
+        plot.background = element_rect(fill = color1))+ scale_y_continuous(labels = comma)
+grid.text(unit(0.7, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Clusters Radius 2",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+####################################################################################################
+####################################################################################################
+freq_cluster_3 <- as.data.frame(table(df_3[[1]][,'cluster_id']))
+cluster_id_3   <- as.data.frame(df_3[[2]])
+freq_cluster_3 <- cbind(freq_cluster_3, cluster_id_3)
+freq_cluster_3 <- freq_cluster_3[order(freq_cluster_3$Freq, decreasing = T), ]
+colnames(freq_cluster_3) <- c('cluster_id', 'count', 'cluster_lat', 'cluster_lon')
+
+ggplot(data=freq_cluster_3, aes(x=reorder(cluster_id, -count), y=count)) + 
+  geom_col(col=color3,aes(fill=color3), fill = color3) +
+  theme_tufte(base_size = 5, ticks=F)+
+  theme(plot.margin = unit(c(10,10,10,10),'pt'),
+        axis.title=element_blank(),
+        axis.text = element_text(colour = color2, size = 10, family = font2),
+        axis.text.x = element_text(hjust = 1, size = 10, family = font2),
+        legend.position = 'None',
+        plot.background = element_rect(fill = color1))+ scale_y_continuous(labels = comma)
+grid.text(unit(0.7, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Clusters Radius 3",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+####################################################################################################
+####################################################################################################
+freq_cluster_4 <- as.data.frame(table(df_4[[1]][,'cluster_id']))
+cluster_id_4   <- as.data.frame(df_4[[2]])
+freq_cluster_4 <- cbind(freq_cluster_4, cluster_id_4)
+freq_cluster_4 <- freq_cluster_4[order(freq_cluster_4$Freq, decreasing = T), ]
+colnames(freq_cluster_4) <- c('cluster_id', 'count', 'cluster_lat', 'cluster_lon')
+
+ggplot(data=freq_cluster_4, aes(x=reorder(cluster_id, -count), y=count)) + 
+  geom_col(col=color3,aes(fill=color3), fill = color3) +
+  theme_tufte(base_size = 5, ticks=F)+
+  theme(plot.margin = unit(c(10,10,10,10),'pt'),
+        axis.title=element_blank(),
+        axis.text = element_text(colour = color2, size = 10, family = font2),
+        axis.text.x = element_text(hjust = 1, size = 10, family = font2),
+        legend.position = 'None',
+        plot.background = element_rect(fill = color1))+ scale_y_continuous(labels = comma)
+grid.text(unit(0.7, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Clusters Radius 4",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+####################################################################################################
+####################################################################################################
+freq_cluster_5 <- as.data.frame(table(df_5[[1]][,'cluster_id']))
+cluster_id_5   <- as.data.frame(df_5[[2]])
+freq_cluster_5 <- cbind(freq_cluster_5, cluster_id_5)
+freq_cluster_5 <- freq_cluster_5[order(freq_cluster_5$Freq, decreasing = T), ]
+colnames(freq_cluster_5) <- c('cluster_id', 'count', 'cluster_lat', 'cluster_lon')
+
+ggplot(data=freq_cluster_5, aes(x=reorder(cluster_id, -count), y=count)) + 
+  geom_col(col=color3,aes(fill=color3), fill = color3) +
+  theme_tufte(base_size = 5, ticks=F)+
+  theme(plot.margin = unit(c(10,10,10,10),'pt'),
+        axis.title=element_blank(),
+        axis.text = element_text(colour = color2, size = 10, family = font2),
+        axis.text.x = element_text(hjust = 1, size = 10, family = font2),
+        legend.position = 'None',
+        plot.background = element_rect(fill = color1))+ scale_y_continuous(labels = comma)
+grid.text(unit(0.7, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Clusters Radius 5",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+####################################################################################################
+####################################################################################################
+freq_cluster_6 <- as.data.frame(table(df_6[[1]][,'cluster_id']))
+cluster_id_6   <- as.data.frame(df_6[[2]])
+freq_cluster_6 <- cbind(freq_cluster_6, cluster_id_6)
+freq_cluster_6 <- freq_cluster_6[order(freq_cluster_6$Freq, decreasing = T), ]
+colnames(freq_cluster_6) <- c('cluster_id', 'count', 'cluster_lat', 'cluster_lon')
+
+ggplot(data=freq_cluster_6, aes(x=reorder(cluster_id, -count), y=count)) + 
+  geom_col(col=color3,aes(fill=color3), fill = color3) +
+  theme_tufte(base_size = 5, ticks=F)+
+  theme(plot.margin = unit(c(10,10,10,10),'pt'),
+        axis.title=element_blank(),
+        axis.text = element_text(colour = color2, size = 10, family = font2),
+        axis.text.x = element_text(hjust = 1, size = 10, family = font2),
+        legend.position = 'None',
+        plot.background = element_rect(fill = color1))+ scale_y_continuous(labels = comma)
+
+grid.text(unit(0.7, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Clusters Radius 6",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+####################################################################################################
+####################################################################################################
+freq_cluster_7 <- as.data.frame(table(df_7[[1]][,'cluster_id']))
+cluster_id_7   <- as.data.frame(df_7[[2]])
+freq_cluster_7 <- cbind(freq_cluster_7, cluster_id_7)
+freq_cluster_7 <- freq_cluster_7[order(freq_cluster_7$Freq, decreasing = T), ]
+colnames(freq_cluster_7) <- c('cluster_id', 'count', 'cluster_lat', 'cluster_lon')
+
+ggplot(data=freq_cluster_7, aes(x=reorder(cluster_id, -count), y=count)) + 
+  geom_col(col=color3,aes(fill=color3), fill = color3) +
+  theme_tufte(base_size = 5, ticks=F)+
+  theme(plot.margin = unit(c(10,10,10,10),'pt'),
+        axis.title=element_blank(),
+        axis.text = element_text(colour = color2, size = 10, family = font2),
+        axis.text.x = element_text(hjust = 1, size = 10, family = font2),
+        legend.position = 'None',
+        plot.background = element_rect(fill = color1))+ scale_y_continuous(labels = comma)
+grid.text(unit(0.7, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Clusters Radius 7",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+####################################################################################################
+####################################################################################################
+freq_cluster_2_7 <- as.data.frame(table(df_markov_train[,'point_of_interest_id_entry']))
+freq_cluster_2_7 <- freq_cluster_2_7[order(freq_cluster_2_7$Freq, decreasing = T), ]
+colnames(freq_cluster_2_7) <- c('cluster_id', 'count')
+
+ggplot(data=freq_cluster_2_7, aes(x=reorder(cluster_id, -count), y=count)) + 
+  geom_col(col=color3,aes(fill=color3), fill = color3) +
+  theme_tufte(base_size = 5, ticks=F)+
+  theme(plot.margin = unit(c(10,10,10,10),'pt'),
+        axis.title=element_blank(),
+        axis.text = element_text(colour = color2, size = 10, family = font2),
+        axis.text.x = element_text(hjust = 0.2, size = 8, family = font2),
+        legend.position = 'None',
+        plot.background = element_rect(fill = color1))
+
+grid.text(unit(0.7, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Clusters Radius 2.7",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+####################################################################################################
+df_markov_train_clean <- readRDS('data/df_markov_train_clean.rda')
+
+transition_matrix_2_7 <- transition_matrix(as.matrix(df_markov_train_clean[,c(2,3)]))
+attributes(transition_matrix_2_7)$class <- "matrix" 
+saveRDS(object = transition_matrix_2_7, file = 'data/transition_matrix_2_7.rda')
+
+library(markovchain)
+
+mczone <- new('markovchain', states = unique_cluster_id, byrow=T, transitionMatrix = transition_matrix_2.7)
+mczone
+
+# for (i in 1:nrow(test_df)){
+#   if (test_df[i,'point_of_interest_id_entry'] == 64){
+#       test_df[i,'point_of_interest_id_entry'] <- NA
+#   }
+#   else if (test_df[i,'point_of_interest_id_exit'] == 64){
+#     test_df[i,'point_of_interest_id_exit'] <- NA
+#   }
+# }
+# 
+# for (i in 1:nrow(test_df)){
+#   if ((test_df$point_of_interest_id_entry == 64 | test_df$point_of_interest_id_exit == 64) & test_df[i,'hash'] == test_df[i-1]){
+#     
+#   }
+# }
+####################################################################################################
+####################################################################################################
+load('data/AtlantaMap.rda')
+
+ggmap(AtlantaMap) +
+  labs(x = '', y = '') +
+  theme(legend.position = 'none') +
+  geom_rect(data = city_center_area, inherit.aes = FALSE, mapping=aes(xmin = city_center_area['SW','lon_y_conv'], xmax = city_center_area['NE','lon_y_conv'], ymin = city_center_area['SE','lat_x_conv'], ymax = city_center_area['NW','lat_x_conv']), colour = 'green', fill = 'green', alpha = 0.1) +
+  # scale_fill_manual(values = c('green')) +
+  # scale_color_manual(values = c('green')) +
+  scale_color_hue() +
+  scale_fill_hue() +
+  annotate("text", x=city_center_area_centroid$lon_y_conv,y=city_center_area_centroid$lat_x_conv,label="City Center",colour="black",size=3, angle = 90) +
+  annotate("text", x=city_center_area['NE','lon_y_conv'],y=city_center_area['NE','lat_x_conv'],label="NE",colour="black",size=3) +
+  annotate("text", x=city_center_area['NW','lon_y_conv'],y=city_center_area['NW','lat_x_conv'],label="NW",colour="black",size=3) +
+  annotate("text", x=city_center_area['SE','lon_y_conv'],y=city_center_area['SE','lat_x_conv'],label="SE",colour="black",size=3) +
+  annotate("text", x=city_center_area['SW','lon_y_conv'],y=city_center_area['SW','lat_x_conv'],label="SW",colour="black",size=3) +
+  geom_point(data = df_train_full_segments[1:100,], aes(x = lon_y_exit_conv, y = lat_x_exit_conv), size = 0.5, colour = 'red') + 
+  geom_point(data = cluster_id_3, aes(x = cluster_lon, y = cluster_lat), size = 5, colour = 'red') + 
+  geom_segment(data = df_train_full_segments[1:100,], aes(x = lon_y_entry_conv, y = lat_x_entry_conv, xend = lon_y_exit_conv, yend = lat_x_exit_conv, colour = hash), arrow=arrow(length = unit(0.1,'cm')))

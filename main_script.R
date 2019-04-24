@@ -4,8 +4,14 @@ df_test  <- read.csv('house_price_test.csv')
 df_train <- read.csv('house_price_train.csv')
 
 source('install_packages.R')
+source('map_api_script.R')
+source('hotspot_coords.R')
+source('analyze_correlations_plots.R')
 source('fct_clusters_coord.R')
 source('fct_haversine_dist.R')
+source('fct_distance_from_hotspot.R')
+source('fct_plot_correlation.R')
+
 ##################################################################################################
 ################################ EXPLORATION OF THE DATASET ######################################
 str(df_train)
@@ -46,84 +52,25 @@ Amelia::missmap(numeric_data_test , col=c('black','white'))
 
 ##################################################################################################
 ################################ EDA OF THE DATASET ##############################################
+# Correlation matrix with the response variable.
+plot_correlation(numeric_data_train)
 
-# Histogram of the response variable.
-ggplot(data=df_train, aes(x=price)) + 
-  geom_histogram(col=color3,aes(fill=color3), fill = color3, binwidth = 10000) +
-  theme_tufte(base_size = 5, ticks=F)+
-  theme(plot.margin = unit(c(10,10,10,10),'pt'),
-        axis.title=element_blank(),
-        axis.text = element_text(colour = color2, size = 10, family = font2),
-        axis.text.x = element_text(hjust = 1, size = 10, family = font2),
-        legend.position = 'None',
-        plot.background = element_rect(fill = color1)) + 
-        scale_y_continuous(labels = comma)+
-        scale_x_continuous(labels = comma)
-
+p1
 grid.text(unit(0.7, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
           label="Histogram of Prices",
           gp=gpar(col=color3, fontsize=16, fontfamily = font2))
 
-# As you can see, the sale prices are right skewed. This was expected as few people can afford very expensive houses.
-# I will keep this in mind, and take measures before modeling.
-
-# Correlation matrix with the response variable.
-cor_numVar <- cor(numeric_data_train, use="pairwise.complete.obs") #correlations of all numeric variables
-
-cor_sorted <- as.matrix(sort(cor_numVar[,'price'], decreasing = TRUE))
-
-CorHigh <- names(which(apply(cor_sorted, 1, function(x) abs(x)>0.5)))
-cor_numVar <- cor_numVar[CorHigh, CorHigh]
-
-corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt")
-
-# Analyze the 2 or 3 highest correlated variables.
-ggplot(data=df_train, aes(x=sqft_living, y=price)) + 
-  geom_point(col=color3) + geom_smooth(method = "lm", se=FALSE, color=color2, aes(group=1)) +
-  theme_tufte(base_size = 5, ticks=F)+
-  theme(plot.margin = unit(c(10,10,10,10),'pt'),
-        axis.title=element_blank(),
-        axis.text = element_text(colour = color2, size = 10, family = font2),
-        axis.text.x = element_text(hjust = 1, size = 10, family = font2),
-        legend.position = 'None',
-        plot.background = element_rect(fill = color1)) + 
-  scale_y_continuous(labels = comma)+
-  scale_x_continuous(labels = comma)
-
+p2
 grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
           label="Relationship of Sqft_living | Price",
           gp=gpar(col=color3, fontsize=16, fontfamily = font2))
 
-########################
-ggplot(data=df_train, aes(x=sqft_above, y=sqft_living)) + 
-  geom_point(col=color3) + geom_smooth(method = "lm", se=FALSE, color=color2, aes(group=1)) +
-  theme_tufte(base_size = 5, ticks=F)+
-  theme(plot.margin = unit(c(10,10,10,10),'pt'),
-        axis.title=element_blank(),
-        axis.text = element_text(colour = color2, size = 10, family = font2),
-        axis.text.x = element_text(hjust = 1, size = 10, family = font2),
-        legend.position = 'None',
-        plot.background = element_rect(fill = color1)) + 
-  scale_y_continuous(labels = comma)+
-  scale_x_continuous(labels = comma)
-
+p3
 grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
           label="Relationship of Sqft_living | Sqft_above",
           gp=gpar(col=color3, fontsize=16, fontfamily = font2))
-
 ##################################################################################################
 ################################ MAP OF THE LOCATIONS OF THE HOUSES ##############################
-## API SETTINGS
-# register_google(key = 'AIzaSyCzcUX4czylxflM0J58r69BbLp6RgrnuhI')
-# getOption("ggmap")
-# 
-# TacomaMap <- get_map(location = c(lon = -122.1, lat = 47.49),
-#                       maptype = "watercolor", source = 'google',
-#                       zoom = 10,
-#                       filename="data/TacomaMap_temp")
-# 
-# save(TacomaMap, file = 'TacomaMap.rda')
-
 load('TacomaMap.rda')
 
 ggmap(TacomaMap) +
@@ -131,7 +78,8 @@ ggmap(TacomaMap) +
   theme(legend.position = 'none') +
   scale_color_hue() +
   scale_fill_hue() +
-  geom_point(data = df_train, aes(x = long, y = lat), size = 0.5, color = 'blue')
+  geom_point(data = df_train, aes(x = long, y = lat), size = 0.3, color = 'blue')+
+  geom_point(data = hotspots_coordinates, aes(x = long, y = lat), size = 5, color = 'red')
 
 ##################################################################################################
 ################################ TRANSFORM THE DATASET WHEN NEEDEED ##############################
@@ -205,15 +153,9 @@ ms <- ggplot(df_train, aes(x=month, y=price)) +
 grid.arrange(ys, ms, widths=c(1,2))
 
 # Distances from hot spots (airport, attractions)
-df_train$distance_from_airport <- haversine_dist(df_train, 'long', 'lat', -122.301659, 47.443546)
-df_train$distance_from_zoo_acquarium <- haversine_dist(df_train, 'long', 'lat', -122.434110, 47.245885)
-df_train$distance_from_museum_of_glass <- haversine_dist(df_train, 'long', 'lat', -122.43366, 47.24556)
-df_train$distance_from_train_station <- haversine_dist(df_train, 'long', 'lat', -122.427778, 47.239722)
-df_train$distance_from_university_of_wash <- haversine_dist(df_train, 'long', 'lat', -122.4378, 47.2448)
-df_train$distance_from_community_college <- haversine_dist(df_train, 'long', 'lat', -122.521920, 47.244109)
-df_train$distance_from_university_puget_sound <- haversine_dist(df_train, 'long', 'lat', -122.482893, 47.263680)
-df_train$distance_from_cheney_stadium <- haversine_dist(df_train, 'long', 'lat', -122.498138, 47.238098)
-df_train$distance_from_port <- haversine_dist(df_train, 'long', 'lat', -122.418487, 47.265181)
+df_train <- distance_from_hotspot(df_train)
+df_test <- distance_from_hotspot(df_test)
+
 
 # Clustering coordinates with radius
 clustering_coords <- clusters_coord(df_train[,c('id', 'lat', 'long')], 1, 'lat', 'long')

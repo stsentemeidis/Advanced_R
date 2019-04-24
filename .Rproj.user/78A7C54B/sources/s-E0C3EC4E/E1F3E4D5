@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1556140704930.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "E1F3E4D5",
+    "lastKnownWriteTime" : 1556141847,
+    "last_content_update" : 1556141847721,
+    "path" : "~/Documents/GitHub/Advanced_R/fct_cluster_coord_dist.R",
+    "project_path" : "fct_cluster_coord_dist.R",
+    "properties" : {
+        "cursorPosition" : "28,1",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 9,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

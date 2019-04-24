@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1556132685246.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "C8DF8B20",
+    "lastKnownWriteTime" : 1556135009,
+    "last_content_update" : 1556135009491,
+    "path" : "~/Documents/GitHub/Advanced_R/hotspot_coords.R",
+    "project_path" : "hotspot_coords.R",
+    "properties" : {
+        "cursorPosition" : "0,0",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 10,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

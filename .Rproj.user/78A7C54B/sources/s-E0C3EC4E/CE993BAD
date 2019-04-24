@@ -1,22 +1,22 @@
 {
     "collab_server" : "",
     "contents" : "",
-    "created" : 1556053052537.000,
+    "created" : 1556139953860.000,
     "dirty" : false,
     "encoding" : "",
     "folds" : "",
     "hash" : "0",
-    "id" : "8D4F8A70",
-    "lastKnownWriteTime" : 6,
-    "last_content_update" : 1556053052537,
+    "id" : "CE993BAD",
+    "lastKnownWriteTime" : 4294967040,
+    "last_content_update" : 1556139953860,
     "path" : null,
     "project_path" : null,
     "properties" : {
-        "id" : "33bc1bfa346d4d2896160187a0ac0304",
-        "name" : "clustering_coords",
-        "title" : "clustering_coords"
+        "id" : "c4b5f97aee614e689980cb3ab3955bdd",
+        "name" : "hc",
+        "title" : "hc"
     },
-    "relative_order" : 8,
+    "relative_order" : 9,
     "source_on_save" : false,
     "source_window" : "",
     "type" : "object_explorer"
