@@ -7,7 +7,7 @@ source('install_packages.R')
 source('map_api_script.R')
 source('hotspot_coords.R')
 source('analyze_correlations_plots.R')
-source('change_plot_ordinal_vars')
+source('fct_plot_correlation.R')
 source('fct_clusters_coord.R')
 source('fct_haversine_dist.R')
 source('fct_distance_from_hotspot.R')
@@ -89,7 +89,7 @@ ggmap(TacomaMap) +
 
 # Extracting date and month.
 df_train$month <- format(as.Date(df_train$date), "%m")
-df_test$month  <- format(as.Date(df_test$date), "%Y-%m")
+df_test$month  <- format(as.Date(df_test$date), "%m")
 df_train$year  <- format(as.Date(df_train$date), "%Y")
 df_test$year   <- format(as.Date(df_test$date), "%Y")
 
@@ -102,39 +102,41 @@ df_train <- turn_renovated_variable(df_train)
 df_test  <- turn_renovated_variable(df_test)
 
 yr_renov
-grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
-          label="Relationship of Sqft_living | Sqft_above",
+grid.text(unit(0.5, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Summary of Year Renovated Variable",
           gp=gpar(col=color3, fontsize=16, fontfamily = font2))
 
 
 
 # Changing some numeric to factor variables.
+source('change_plot_ordinal_vars.R')
+
 grid.arrange(grade_factor_plot, condition_factor_plot, view_factor_plot, nrow=1, ncol=3)
-grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+grid.text(unit(0.015, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
           label="Grade Variable",
-          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
-grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          gp=gpar(col=color3, fontsize=10, fontfamily = font2))
+grid.text(unit(0.33, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
           label="Condition Variable",
-          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
-grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          gp=gpar(col=color3, fontsize=10, fontfamily = font2))
+grid.text(unit(0.8, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
           label="View Variable",
-          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+          gp=gpar(col=color3, fontsize=10, fontfamily = font2))
 
 grid.arrange(year_factor_plot, month_factor_plot, nrow=1, ncol=2)
-grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+grid.text(unit(0.32, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
           label="Year Variable",
-          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
-grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          gp=gpar(col=color3, fontsize=10, fontfamily = font2))
+grid.text(unit(0.81, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
           label="Month Variable",
-          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+          gp=gpar(col=color3, fontsize=10, fontfamily = font2))
 
 grid.arrange(years_price, months_price, nrow=1, ncol=2)
-grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+grid.text(unit(0.2, 'npc'), unit(0.97,"npc"), check.overlap = T,just = "left",
           label="Year | Price Distribution",
-          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
-grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          gp=gpar(col=color3, fontsize=10, fontfamily = font2))
+grid.text(unit(0.7, 'npc'), unit(0.97,"npc"), check.overlap = T,just = "left",
           label="Month | Price Distribution",
-          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+          gp=gpar(col=color3, fontsize=10, fontfamily = font2))
 
 # Distances from hot spots (airport, attractions)
 df_train <- distance_from_hotspot(df_train)
@@ -147,6 +149,7 @@ unique(clustering_coords[[1]][,2])
 
 df_train <- merge(df_train, unique(clustering_coords[[1]][,c(1,2)]))
 df_train <- df_train[order(df_train$id),]
+
 
 # Detecting and fixing skewness. Acceptable test limits (-2,2)
 for (i in colnames(numeric_data_train)){
