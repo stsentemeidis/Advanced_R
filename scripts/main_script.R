@@ -150,6 +150,24 @@ unique(clustering_coords[[1]][,2])
 df_train <- merge(df_train, unique(clustering_coords[[1]][,c(1,2)]))
 df_train <- df_train[order(df_train$id),]
 
+# Clustering coordinates with distance
+df_train$coordinates <- paste0('(', df_train$long, ', ', df_train$lat, ')')
+df_test$coordinates  <- paste0('(', df_test$long, ', ', df_test$lat, ')')
+
+df_coords <- rbind(df_train[,c('long','lat')], df_test[,c('long', 'lat')])
+
+source('scripts/finding_optimal_distance.R')
+
+cluster_coords_ids <- cluster_coords_hier(df_coords, 1000) # distance in meters
+cluster_coords_ids_df <- as.data.frame(cluster_coords_ids)
+length(unique(cluster_coords_ids_df$clust))                # number of clusters
+
+df_train <- merge(df_train, cluster_coords_ids_df, by.x= c('long', 'lat'), by.y = c('coords.x1', 'coords.x2'))
+df_test  <- merge(df_test,  cluster_coords_ids_df, by.x= c('long', 'lat'), by.y = c('coords.x1', 'coords.x2'))
+
+df_train <- df_train[, !(colnames(df_train) %in% c('ID'))]
+df_test  <- df_test [, !(colnames(df_test)  %in% c('ID'))]
+
 
 # Detecting and fixing skewness. Acceptable test limits (-2,2)
 for (i in colnames(numeric_data_train)){
