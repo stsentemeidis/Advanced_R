@@ -1,18 +1,18 @@
 ##################################################################################################
 ################################ LOADING DATASETS  ###############################################
-df_test  <- read.csv('house_price_test.csv')
-df_train <- read.csv('house_price_train.csv')
+df_test  <- read.csv('data/house_price_test.csv')
+df_train <- read.csv('data/house_price_train.csv')
 
-source('install_packages.R')
-source('map_api_script.R')
-source('hotspot_coords.R')
-source('analyze_correlations_plots.R')
-source('fct_plot_correlation.R')
-source('fct_clusters_coord.R')
-source('fct_haversine_dist.R')
-source('fct_distance_from_hotspot.R')
-source('fct_time_differences.R')
-source('fct_turn_renovated_variable.R')
+source('scripts/install_packages.R')
+source('scripts/map_api_script.R')
+source('scripts/hotspot_coords.R')
+source('scripts/analyze_correlations_plots.R')
+source('scripts/fct_plot_correlation.R')
+source('scripts/fct_clusters_coord.R')
+source('scripts/fct_haversine_dist.R')
+source('scripts/fct_distance_from_hotspot.R')
+source('scripts/fct_time_differences.R')
+source('scripts/fct_turn_renovated_variable.R')
 
 
 ##################################################################################################
@@ -74,7 +74,7 @@ grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
           gp=gpar(col=color3, fontsize=16, fontfamily = font2))
 ##################################################################################################
 ################################ MAP OF THE LOCATIONS OF THE HOUSES ##############################
-load('TacomaMap.rda')
+load('data/TacomaMap.rda')
 
 ggmap(TacomaMap) +
   labs(x = '', y = '') +
@@ -82,7 +82,7 @@ ggmap(TacomaMap) +
   scale_color_hue() +
   scale_fill_hue() +
   geom_point(data = df_train, aes(x = long, y = lat), size = 0.3, color = 'blue')+
-  geom_point(data = hotspots_coordinates, aes(x = long, y = lat), size = 5, color = 'red')
+  geom_point(data = hotspots_coordinates, aes(x = long, y = lat), size = 5, color = 'red', alpha = 1/2)
 
 ##################################################################################################
 ################################ TRANSFORM THE DATASET WHEN NEEDEED ##############################
