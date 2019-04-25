@@ -82,7 +82,29 @@ ggmap(TacomaMap) +
   scale_color_hue() +
   scale_fill_hue() +
   geom_point(data = df_train, aes(x = long, y = lat), size = 0.3, color = 'blue')+
-  geom_point(data = hotspots_coordinates, aes(x = long, y = lat), size = 5, color = 'red', alpha = 1/2)
+  geom_point(data = hotspots_coordinates, aes(x = long, y = lat), size = 5, color = 'red', alpha = 1/2)+
+  geom_label_repel(
+    aes(long, lat, label = name),
+    data=hotspots_coordinates,
+    family = 'Times', 
+    size = 3, 
+    box.padding = 0.2, point.padding = 0.3,
+    segment.color = 'grey50')
+
+ggmap(TacomaMap) + stat_density2d(
+  aes(x = long, y = lat, fill = ..level.., alpha = 0.25),
+  size = 0.01, bins = 30, data = df_train,
+  geom = "polygon"
+) +
+  geom_point(aes(x = long, y = lat, stroke = 2), colour='red', data = hotspots_coordinates, size =1.5) + 
+  geom_label_repel(
+    aes(long, lat, label = name),
+    data=hotspots_coordinates,
+    family = 'Times', 
+    size = 3, 
+    box.padding = 0.2, point.padding = 0.3,
+    segment.color = 'grey50')
+
 
 ##################################################################################################
 ################################ TRANSFORM THE DATASET WHEN NEEDEED ##############################
