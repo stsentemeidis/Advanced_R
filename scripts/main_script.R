@@ -165,6 +165,8 @@ df_test  <- merge(df_test,  cluster_coords_ids_df, by.x= c('long', 'lat'), by.y 
 df_train <- df_train[, !(colnames(df_train) %in% c('ID'))]
 df_test  <- df_test [, !(colnames(df_test)  %in% c('ID'))]
 
+numeric_data_train_full<-as.data.frame(data.table(df_train[, sapply(df_train,is.numeric)]))
+plot_correlation(numeric_data_train_full)
 
 # Detecting and fixing skewness. Acceptable test limits (-2,2)
 for (i in colnames(numeric_data_train)){
