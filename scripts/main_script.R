@@ -140,31 +140,37 @@ df_train <- distance_from_hotspot(df_train)
 df_test  <- distance_from_hotspot(df_test)
 
 
-# Clustering coordinates with radius
-clustering_coords <- clusters_coord(df_train[,c('id', 'lat', 'long')], 1, 'lat', 'long')
-unique(clustering_coords[[1]][,2])
-
-df_train <- merge(df_train, unique(clustering_coords[[1]][,c(1,2)]))
-df_train <- df_train[order(df_train$id),]
+# # Clustering coordinates with radius
+# clustering_coords <- clusters_coord(df_train[,c('id', 'lat', 'long')], 1, 'lat', 'long')
+# unique(clustering_coords[[1]][,2])
+# 
+# df_train <- merge(df_train, unique(clustering_coords[[1]][,c(1,2)]))
+# df_train <- df_train[order(df_train$id),]
 
 # Clustering coordinates with distance
 df_train$coordinates <- paste0('(', df_train$long, ', ', df_train$lat, ')')
 df_test$coordinates  <- paste0('(', df_test$long, ', ', df_test$lat, ')')
 
-df_coords <- rbind(df_train[,c('long','lat')], df_test[,c('long', 'lat')])
+df_coords <- rbind(df_train[,c('long','lat','id')], df_test[,c('long', 'lat','id')])
 
 source('scripts/finding_optimal_distance.R')
 
-cluster_coords_ids <- cluster_coords_hier(df_coords, 1000) # distance in meters
+opt_dist_plot
+grid.text(unit(0.5, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Optimal Distance for Hierarchical Clustering",
+          gp=gpar(col='yellow3', fontsize=16, fontfamily = font2))
+
+cluster_coords_ids <- cluster_coords_hier(df_coords, 2200) # distance in meters
 cluster_coords_ids_df <- as.data.frame(cluster_coords_ids)
 length(unique(cluster_coords_ids_df$clust))                # number of clusters
 
-df_train <- merge(df_train, cluster_coords_ids_df, by.x= c('long', 'lat'), by.y = c('coords.x1', 'coords.x2'))
-df_test  <- merge(df_test,  cluster_coords_ids_df, by.x= c('long', 'lat'), by.y = c('coords.x1', 'coords.x2'))
+df_train_clusters <- cluster_coords_ids_df[1:17277,]
+df_test_clusters  <- cluster_coords_ids_df[17278:21597,]
 
-df_train <- df_train[, !(colnames(df_train) %in% c('ID'))]
-df_test  <- df_test [, !(colnames(df_test)  %in% c('ID'))]
+df_train <- cbind(df_train, df_train_clusters$clust )
+df_test  <- cbind(df_test,  df_test_clusters$clust )
 
+# Plot correlation matrix of all the variables that have been added to our initial dataset.
 numeric_data_train_full<-as.data.frame(data.table(df_train[, sapply(df_train,is.numeric)]))
 plot_correlation(numeric_data_train_full)
 
