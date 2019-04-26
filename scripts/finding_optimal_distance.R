@@ -1,18 +1,20 @@
 ##################################################################################################
 ################################ OPTIMAL DISTANCE VALUE ##########################################
-distance_values <- seq(1000,5000,100)
-distance_clusters_df <- data.frame(distance = numeric(),
-                                   number_of_clusters = numeric())
-for (i in distance_values){
+# distance_values <- seq(1000,5000,100)
+# distance_clusters_df <- data.frame(distance = numeric(),
+#                                    number_of_clusters = numeric())
+# for (i in distance_values){
+# 
+#   cluster_coords_test <- cluster_coords_hier(df_coords, i)                                                # distance in meters
+#   cluster_coords_test_df <- as.data.frame(cluster_coords_test)
+#   distance_clusters_df <- rbind(distance_clusters_df,c(i,length(unique(cluster_coords_test_df$clust)))  ) # number of clusters
+#   
+# }
+# 
+# colnames(distance_clusters_df) <- c('distance', 'number_of_clusters')
+# saveRDS(distance_clusters_df,'data/distance_clusters_df.rda')
 
-  cluster_coords_test <- cluster_coords_hier(df_coords, i)                                                # distance in meters
-  cluster_coords_test_df <- as.data.frame(cluster_coords_test)
-  distance_clusters_df <- rbind(distance_clusters_df,c(i,length(unique(cluster_coords_test_df$clust)))  ) # number of clusters
-  
-}
-
-colnames(distance_clusters_df) <- c('distance', 'number_of_clusters')
-saveRDS(distance_clusters_df,'data/distance_clusters_df.rda')
+distance_clusters_df <- readRDS('data/distance_clusters_df.rda')
 
 opt_dist_plot <- ggplot(distance_clusters_df) + 
   geom_point(data = distance_clusters_df, aes(x = distance, y = number_of_clusters, color = color3))+

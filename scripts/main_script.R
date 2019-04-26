@@ -4,13 +4,14 @@ df_test  <- read.csv('data/house_price_test.csv')
 df_train <- read.csv('data/house_price_train.csv')
 
 source('scripts/install_packages.R')
-source('scripts/map_api_script.R')
 source('scripts/hotspot_coords.R')
 source('scripts/analyze_correlations_plots.R')
 source('scripts/fct_plot_correlation.R')
 source('scripts/fct_clusters_coord.R')
+source('scripts/fct_cluster_coord_dist.R')
 source('scripts/fct_haversine_dist.R')
 source('scripts/fct_distance_from_hotspot.R')
+source('scripts/fct_renovated_fixed_sft15.R')
 source('scripts/fct_time_differences.R')
 source('scripts/fct_turn_renovated_variable.R')
 
@@ -21,9 +22,6 @@ str(df_train)
 str(df_test)
 summary(df_train)
 summary(df_test)
-
-# Familiriazing with the dataset.
-ggpairs(data=df_train[,-c(1,2,3)])
 
 # Keeping numeric as the common arithmetic type for the data columns.
 for (i in colnames(df_train)){
@@ -55,6 +53,9 @@ Amelia::missmap(numeric_data_test , col=c('black','white'))
 
 ##################################################################################################
 ################################ EDA OF THE DATASET ##############################################
+# Pairplot.
+ggpairs(data=df_train[,-c(1,2,3)])
+
 # Correlation matrix with the response variable.
 plot_correlation(numeric_data_train)
 
@@ -77,6 +78,7 @@ grid.text(unit(0.1, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
 load('data/TacomaMap_terrain.rda')
 load('data/TacomaMap_roadmap.rda')
 load('data/TacomaMap_satellite.rda')
+source('scripts/map_api_script.R')
 
 map1
 map2
@@ -94,9 +96,11 @@ df_test$year   <- format(as.Date(df_test$date), "%Y")
 df_train <- time_differences(df_train)
 df_test  <- time_differences(df_test)
 
-# Renovated or not
-df_train <- turn_renovated_variable(df_train)
-df_test  <- turn_renovated_variable(df_test)
+# if sqft_living != sqft_living15 then yr_renovated is a YES. We do not care about the years as the distribution is bad. 
+# Also, the difference in those 2 shows that they hve faced some renovation
+
+df_train <- renovated_fixed_sft15(df_train)
+df_test  <- renovated_fixed_sft15(df_test)
 
 yr_renov
 grid.text(unit(0.5, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
@@ -106,7 +110,7 @@ grid.text(unit(0.5, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
 
 
 # Changing some numeric to factor variables.
-source('change_plot_ordinal_vars.R')
+source('scripts/change_plot_ordinal_vars.R')
 
 grid.arrange(grade_factor_plot, condition_factor_plot, view_factor_plot, nrow=1, ncol=3)
 grid.text(unit(0.015, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
@@ -160,15 +164,28 @@ grid.text(unit(0.5, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
           label="Optimal Distance for Hierarchical Clustering",
           gp=gpar(col='yellow3', fontsize=16, fontfamily = font2))
 
-cluster_coords_ids <- cluster_coords_hier(df_coords, 2200) # distance in meters
-cluster_coords_ids_df <- as.data.frame(cluster_coords_ids)
-length(unique(cluster_coords_ids_df$clust))                # number of clusters
+# cluster_coords_ids <- cluster_coords_hier(df_coords, 2200) # distance in meters
+# cluster_coords_ids_df <- as.data.frame(cluster_coords_ids)
+# length(unique(cluster_coords_ids_df$clust))                # number of clusters
+# saveRDS(cluster_coords_ids_df, 'data/cluster_coords_ids_df.rds')
+
+cluster_coords_ids_df <- readRDS('data/cluster_coords_ids_df.rds')
 
 df_train_clusters <- cluster_coords_ids_df[1:17277,]
 df_test_clusters  <- cluster_coords_ids_df[17278:21597,]
 
 df_train <- cbind(df_train, df_train_clusters$clust )
+setnames(df_train, old = 'df_train_clusters$clust', new = 'cluster')
 df_test  <- cbind(df_test,  df_test_clusters$clust )
+setnames(df_test, old = 'df_test_clusters$clust', new = 'cluster')
+
+# Creating Variable if hte house is new or not 
+df_train$new <- ifelse(df_train$year == df_train$yr_built, 'YES', 'NO')
+df_test$new  <- ifelse(df_test$year  == df_test$yr_built, 'YES', 'NO')
+
+# Creating total size of area of the house
+df_train$total_area <- df_train$sqft_living + df_train$sqft_basement
+df_test$total_area  <- df_test$sqft_living  + df_test$sqft_basement
 
 # Plot correlation matrix of all the variables that have been added to our initial dataset.
 numeric_data_train_full<-as.data.frame(data.table(df_train[, sapply(df_train,is.numeric)]))
