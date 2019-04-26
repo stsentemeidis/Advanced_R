@@ -14,7 +14,7 @@ source('scripts/fct_distance_from_hotspot.R')
 source('scripts/fct_renovated_fixed_sft15.R')
 source('scripts/fct_time_differences.R')
 source('scripts/fct_turn_renovated_variable.R')
-
+source('scripts/fct_one_hot_encoding.R')
 
 ##################################################################################################
 ################################ EXPLORATION OF THE DATASET ######################################
@@ -23,6 +23,8 @@ str(df_test)
 summary(df_train)
 summary(df_test)
 
+# Create column price
+df_test$price <- 0
 # Keeping numeric as the common arithmetic type for the data columns.
 for (i in colnames(df_train)){
   if (class(df_train[,i]) == 'integer'){
@@ -186,10 +188,30 @@ df_test$new  <- ifelse(df_test$year  == df_test$yr_built, 'YES', 'NO')
 # Creating total size of area of the house
 df_train$total_area <- df_train$sqft_living + df_train$sqft_basement
 df_test$total_area  <- df_test$sqft_living  + df_test$sqft_basement
+##################################################################################################
+### CONVERTING CATEGORICAL | ORDINAL COLUMNS TO THE CORRECT DATA TYPE
+factor_variables <- c('waterfront', 'view', 'condition', 'grade', 'yr_renovated', 
+                      'month', 'year', 'new')
 
+for (i in factor_variables){
+  df_train[,i] <- as.character(df_train[,i])
+}
+for (i in factor_variables){
+  df_test[,i] <- as.character(df_test[,i])
+}
 # Plot correlation matrix of all the variables that have been added to our initial dataset.
 numeric_data_train_full<-as.data.frame(data.table(df_train[, sapply(df_train,is.numeric)]))
 plot_correlation(numeric_data_train_full)
+
+##################################################################################################
+# ONE HOT ENCODING
+df_train_full <- one_hot_encoding(df_train)
+corr_full <- cor(df_train_full)
+plot_correlation(df_train_full)
+df_test_full  <- one_hot_encoding(df_test)
+
+# REMOVE MULTICOLLINEARITY
+source('scripts/remove_multicollinearirt_vif.R')
 
 # Detecting and fixing skewness. Acceptable test limits (-2,2)
 for (i in colnames(numeric_data_train)){
