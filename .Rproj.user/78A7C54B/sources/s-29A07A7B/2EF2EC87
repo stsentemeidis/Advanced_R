@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1556520692579.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "2EF2EC87",
+    "lastKnownWriteTime" : 1556522177,
+    "last_content_update" : 1556522177122,
+    "path" : "~/Documents/GitHub/House_Prices_Seattle/scripts/xgboost.R",
+    "project_path" : "scripts/xgboost.R",
+    "properties" : {
+        "cursorPosition" : "17,72",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

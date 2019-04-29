@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1556520129178.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "4EC46710",
+    "lastKnownWriteTime" : 1556520147,
+    "last_content_update" : 1556520147048,
+    "path" : "~/Documents/GitHub/House_Prices_Seattle/scripts/lasso_reg.R",
+    "project_path" : "scripts/lasso_reg.R",
+    "properties" : {
+        "cursorPosition" : "26,14",
+        "scrollLine" : "8"
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

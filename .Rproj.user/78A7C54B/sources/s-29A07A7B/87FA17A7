@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1556480212774.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "87FA17A7",
+    "lastKnownWriteTime" : 1556523956,
+    "last_content_update" : 1556523956255,
+    "path" : "~/Documents/GitHub/House_Prices_Seattle/scripts/main_script.R",
+    "project_path" : "scripts/main_script.R",
+    "properties" : {
+        "cursorPosition" : "253,70",
+        "scrollLine" : "238"
+    },
+    "relative_order" : 10,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

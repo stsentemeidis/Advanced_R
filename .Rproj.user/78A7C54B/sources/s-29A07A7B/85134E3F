@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1556521811637.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "85134E3F",
+    "lastKnownWriteTime" : 1556523663,
+    "last_content_update" : 1556523663271,
+    "path" : "~/Documents/GitHub/House_Prices_Seattle/scripts/model_testing.R",
+    "project_path" : "scripts/model_testing.R",
+    "properties" : {
+        "cursorPosition" : "35,1",
+        "scrollLine" : "62"
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
