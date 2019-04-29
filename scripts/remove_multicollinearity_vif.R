@@ -32,5 +32,6 @@ while(any(all_vifs > 5)){
   all_vifs <- car::vif(selectedMod)
 }
 
+signif_all <- names(all_vifs)
 print(all_vifs)
 print(myForm)
