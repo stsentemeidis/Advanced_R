@@ -1,0 +1,693 @@
+---
+always_allow_html: yes
+title: "House Prices Seattle Individual Assignment"
+author: "Stavros Tsentemeidis"
+date: "5/13/2019"
+output:   
+  prettydoc::html_pretty:
+  theme: leonids
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## GitHub Repository    
+The whole project is under this repository at my GitHub account.    
+**https://github.com/stsentemeidis/House_Prices_Seattle**   
+
+## Loading packages & Data
+
+Before starting our EDA and model development pipeline, we first need to install and load:     
+
+*   The necessary **packages** 
+*   The data file named **house prices ** we are about to use
+*   The custom **functions** that have been created to make the main script more clear, interpreatable and efficient.
+
+```{r Packages, echo = FALSE, include = FALSE, warning=FALSE, message=FALSE}
+packages_list <- c('readxl',
+                   'lubridate',
+                   'ggrepel',
+                   'arm',
+                   'rpart.plot',
+                   'rpart',
+                   'MLmetrics',
+                   'ROCR',
+                   'tidyr',
+                   'ggplot2',
+                   'corrplot',
+                   'InformationValue',
+                   'GGally',
+                   'gridExtra',
+                   'tree',
+                   'leaflet',
+                   'jtools',
+                   'lattice',
+                   'car',
+                   'caret',
+                   'MASS',
+                   'ggthemes',
+                   'RColorBrewer',
+                   'reshape',
+                   'tidyverse',
+                   'glmnet',
+                   'dummies',
+                   'fastDummies',
+                   'e1071',
+                   'dplyr',
+                   'anchors',
+                   'mlbench',
+                   'boot',
+                   'gridExtra',
+                   'datasets',
+                   'scales',
+                   'ggplot2',
+                   'fpc',
+                   'gbm',
+                   'data.table',
+                   'grid',
+                   'proj4',
+                   'mapproj',
+                   'ggmap',
+                   'ggplot2',
+                   'maps',
+                   'geosphere',
+                   'leaderCluster',
+                   'kableExtra',
+                   'stringr'
+)
+
+for (i in packages_list){
+  if(!i%in%installed.packages()){
+    install.packages(i, dependencies = TRUE)
+    library(i, character.only = TRUE)
+    print(paste0(i, ' has been installed'))
+  } else {
+    print(paste0(i, ' is already installed'))
+    library(i, character.only = TRUE)
+  }
+}
+
+# Palette Colour
+color1 = 'black'
+color2 = 'white'
+color3 = 'gold1'
+color4 = 'darkorchid3'
+font1 = 'Impact'
+font2 = 'Helvetica'
+
+df_test  <- read.csv('data/house_price_test.csv')
+df_train <- read.csv('data/house_price_train.csv')
+
+source('scripts/install_packages.R')
+source('scripts/hotspot_coords.R')
+source('scripts/analyze_correlations_plots.R')
+source('scripts/fct_plot_correlation.R')
+source('scripts/fct_clusters_coord.R')
+source('scripts/fct_cluster_coord_dist.R')
+source('scripts/fct_haversine_dist.R')
+source('scripts/fct_distance_from_hotspot.R')
+source('scripts/fct_renovated_fixed_sft15.R')
+source('scripts/fct_time_differences.R')
+source('scripts/fct_turn_renovated_variable.R')
+source('scripts/fct_one_hot_encoding.R')
+source('scripts/rfe_feature_selection.R')
+
+```
+
+
+
+
+
+
+## Explanation & summary of the dataset
+
+To begin with let's have a look at the meaning of the initial variables provided for the dataset.     
+
+*   **id**: a notation for a house   
+*   **date**: date house was sold   
+*   **price**: price is prediction target   
+*   **bedrooms**: number of bedrooms per house   
+*   **bathrooms**: number of bathrooms per house     
+*   **sqft_living**: square footage of the home   
+*   **sqft_lot**: square footage of the lot        
+*   **floors**: total floors (levels) in house     
+*   **waterfront**: house which has a view to a waterfront    
+*   **view**: has been viewed     
+*   **condition**: how good the condition is (overall)    
+*   **grade**: overall grade given to the housing unit, based on King County grading system     
+*   **sqft_above**: square footage of house apart from basement    
+*   **sqft_basement**: square footage of the basement     
+*   **yr_built**: built year
+*   **yr_renovated**: year when house was renovated    
+*   **zipcode**: zip of a house     
+*   **lat**: latitude coordinate    
+*   **long**: longtitude coordinate     
+*   **sqft_living15**: living room are in 2015 (implies some renovations). This might or might not have affected the lotsize area   
+*   **sqft_lot15**: lotsize area in 2015 (implies some renovations)     
+
+However, as we can see in the below correlation plots, the variable **view** has a high correlation with **waterfront**. Adding to that the variable **view** has many zeros. These 2 things lead me to the conclusion that variable view is not the amount of times viewed before sold, but **whether the view is good or not.**        
+
+From the below summary and description we can see that:    
+
+1. There are no **missing values**, so our dataset is complete.
+2. The variables *condition* and *grade*  are ordinal variables.
+3. The variables above need to be converted from int to *factors*.
+4. *Bedrooms*, *bathrooms* and *floors* are variables with discrete levels that can be converted to factors probably later on.. 
+
+```{r structure, echo=FALSE, warning=FALSE}
+kable(str(df_train))
+```
+
+```{r summary, echo=FALSE, warning = FALSE}
+kable(summary(df_train))%>%
+  kable_styling(bootstrap_options = "striped", font_size = 11)%>%
+  scroll_box(width = "100%", height = "400px")
+```
+
+At this point it is decided:      
+
+*   to keep *numeric* as the common data type
+*   change the *dates* to a universal date type format of "%m/%d/%Y"
+*   create the column *price* for the test set as it is missing
+*   subset the numerical data columns in order to plot some initial EDA.
+
+```{r Transformations 1, echo=FALSE, warning = FALSE}
+# Create column price
+df_test$price <- 1000
+
+# Keeping numeric as the common arithmetic type for the data columns.
+for (i in colnames(df_train)){
+  if (class(df_train[,i]) == 'integer'){
+    df_train[,i] <- as.numeric(df_train[,i])
+  }
+}
+
+for (i in colnames(df_test)){
+  if (class(df_test[,i]) == 'integer'){
+    df_test[,i] <- as.numeric(df_test[,i])
+  }
+}
+
+# Converting the date column from factor to date type.
+df_train[,'date'] <- as.Date(df_train[,'date'], format = "%m/%d/%Y")
+df_test[,'date']  <- as.Date(df_test[,'date'],  format = "%m/%d/%Y")
+
+# Subsetting numerical data.
+numeric_data_train<-as.data.frame(data.table(df_train[, sapply(df_train,is.numeric)]))
+numeric_data_train <- numeric_data_train[,-c(1)]
+numeric_data_test <-as.data.frame(data.table(df_test[, sapply(df_test,is.numeric)]))
+numeric_data_test <- numeric_data_test[,-1]
+```
+
+As a first stage approach, the initial **correlation matrix** is plotted. Based on that we can notice that:    
+
+*   **Price** is highly correlated with the **sqft_living** variables, something that we would expect from intuition.
+*   **Sqft_living** is highly correlated with the **sqft_above**
+
+Furthermore, in order to understand our target variable better, the histogram of the prices is plotted. Referring to that we notice that the distribution of the prices is heavily right skewed, which makes sense as there are few really expensive ones.   
+
+In order to help our models predictability and performance, at this stage it is decided to apply the **log** transformation on the target column, but also make sure we undo that after the predictions by applying the **exp** function.
+
+```{r Correlation 1, echo=FALSE, warning = FALSE, fig.align='center', fig.width = 8, fig.height= 7}
+plot_correlation(numeric_data_train, size_p = 0.5, size_t = 0.8)
+```
+</br>
+```{r Histograms of Prices, echo=FALSE, warning = FALSE, fig.align='center', fig.width = 10}
+p1
+grid.text(unit(0.7, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Histogram of Prices",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+```
+</br>
+```{r Relationship of Sqft_living & Price, echo=FALSE, warning = FALSE, fig.align='center', fig.width = 10}
+p2
+grid.text(unit(0.16, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Relationship of Sqft_living | Price",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+```
+</br>
+```{r Relationship of Sqft_living & Sqft_above, echo=FALSE, warning = FALSE, fig.align='center', fig.width = 10}
+p3
+grid.text(unit(0.15, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Relationship of Sqft_living | Sqft_above",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+```
+</br>
+After having some first point of views on our dataset, it is time to take advantage of the coordinates given for the houses sold. By using the **Google Maps API** through the **ggmap** of ggplot2 in R, we depict different maps of the location of the places. Below 3 different maps can be noticed:    
+
+*   First we have a simple roadmap with the location as points.
+*   Second, we have a density map of the points.
+*   Third we have again a density map, but with the different density polygons shaped.
+
+```{r Maps1, echo=FALSE, warning = FALSE, fig.align='center', fig.width=7, fig.height=7}
+load('data/TacomaMap_terrain.rda')
+load('data/TacomaMap_roadmap.rda')
+load('data/TacomaMap_satellite.rda')
+source('scripts/map_api_script.R')
+map1
+```
+</br>
+After creating the initial map, it is observed that some of the points are concentrated in specific areas. By actually observing manually the google maps, points of interest are defined which are also depicted and are going to be used as part of the feature engineering process later on.   
+
+These spots are:  
+  
+*  **Airport**   
+* **IKEA**   
+* **Fun Center**   
+* **Municipal Airport**   
+* **WalMart**    
+* **University of Washington**     
+* **Seattle College**    
+* **Woodland Zoo**    
+* **Lake**    
+* **US football stadium**    
+* **Discovery Park**     
+* **Lincoln Park**    
+* **Baseball Stadium**    
+* **King Street Station**     
+* **Sodo Station**     
+* **Capitol Hill Station**     
+* **Golf Course**
+* **Lake Wilderness**
+```{r Maps2, echo=FALSE, warning = FALSE, fig.align='center', fig.width=10, fig.height=6}
+grid.arrange(map2, map3, nrow=1)
+```
+
+
+
+
+
+
+## Feature Engineering Process
+
+Having a great overview of our dataset both from an intuitive, but also from a machine learning perspective, it is time to move on to taking care of our dataset.    
+
+Some of the obvious features that are going to be created are:   
+
+*  **Month** out of the date.   
+*  **Year** out of the date.    
+*  **Age when sold** which comes out of year minus year built
+*  **Age till today** which comes out of the year 2019 minus year built.   
+
+Furthermore, while looking at the description of the variables, it is noticed that even though some houses might not have a year of renovation, they might actually do. More specifically, if the values in **sqft_living15** and **sqft_lot15** do not much the ones in **sqft_living** and **sqft_lot**, it is implied that the house has been renovated at some point. This new insight affects also the variable **yr_renovation**, as it is decided to be dropped cause of many zero values (*as seen in the plot below*) and be replaced by a new one called again **yr_renovated**, but actually consisting of a binary variable on *whether the house has been under renovation or not*. The binary value is actually been calculated by checking the difference between the variables mentioned immediatelly before.
+
+
+```{r Transformations 2, echo=FALSE, warning = FALSE, fig.align='center', fig.width=10}
+# Extracting date and month.
+df_train$month <- format(as.Date(df_train$date), "%m")
+df_test$month  <- format(as.Date(df_test$date), "%m")
+df_train$year  <- format(as.Date(df_train$date), "%Y")
+df_test$year   <- format(as.Date(df_test$date), "%Y")
+
+# Time differences between
+df_train <- time_differences(df_train)
+df_test  <- time_differences(df_test)
+
+# if sqft_living != sqft_living15 then yr_renovated is a YES. We do not care about the years as the distribution is bad. 
+# Also, the difference in those 2 shows that they hve faced some renovation
+
+df_train <- renovated_fixed_sft15(df_train)
+df_test  <- renovated_fixed_sft15(df_test)
+
+yr_renov
+grid.text(unit(0.5, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Summary of Year Renovated Variable",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+
+```
+
+
+As already discussed before, some variables are not just numerical, but have a more deep meaning that classifies them as **ordinal** and **factors**. These variables are the below and are transformed and plotted in order to get a better overview of their behavior and distribution across our dataset.   
+
+*   **Grade**   
+*   **Condition**
+*   **View**   
+*   **Year** and **Month**, as they are not useful as numeric anymore after the columns needed are created.   
+
+```{r Factor 1, echo=FALSE, warning = FALSE, fig.align='center', fig.width=10}
+source('scripts/change_plot_ordinal_vars.R')
+grid.arrange(grade_factor_plot, condition_factor_plot, view_factor_plot, nrow=1, ncol=3)
+grid.text(unit(0.015, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Grade Variable",
+          gp=gpar(col=color3, fontsize=10, fontfamily = font2))
+grid.text(unit(0.33, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Condition Variable",
+          gp=gpar(col=color3, fontsize=10, fontfamily = font2))
+grid.text(unit(0.8, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="View Variable",
+          gp=gpar(col=color3, fontsize=10, fontfamily = font2))
+```
+</br>
+```{r Factor 2, echo=FALSE, warning = FALSE, fig.align='center', fig.width=10}
+grid.arrange(year_factor_plot, month_factor_plot, nrow=1, ncol=2)
+grid.text(unit(0.32, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Year Variable",
+          gp=gpar(col=color3, fontsize=10, fontfamily = font2))
+grid.text(unit(0.81, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Month Variable",
+          gp=gpar(col=color3, fontsize=10, fontfamily = font2))
+```
+
+Another thing that would be useful to dive into is the distribution of **Year** along with the **Price**, but also the one between **Month** with the **Price**.   
+
+```{r Year | Month | Price, echo=FALSE, warning = FALSE, fig.align='center', fig.width=10}
+grid.arrange(years_price, months_price, nrow=1, ncol=2)
+grid.text(unit(0.2, 'npc'), unit(0.97,"npc"), check.overlap = T,just = "left",
+          label="Year | Price Distribution",
+          gp=gpar(col=color3, fontsize=10, fontfamily = font2))
+grid.text(unit(0.7, 'npc'), unit(0.97,"npc"), check.overlap = T,just = "left",
+          label="Month | Price Distribution",
+          gp=gpar(col=color3, fontsize=10, fontfamily = font2))
+```
+
+
+As previously mentioned, while exploring the geospatial dimension of our dataset, several possible hotspots were detected. At this time, we calculate the distances of all the houses from all the hotspots. The type of distance measurement method used, is the **haversine** that is more accurate when calculating distances on a sphere. The coordinates along with the point are shown in the table below.   
+
+```{r hotspots, echo=FALSE, warning = FALSE, fig.align='center'}
+df_train <- distance_from_hotspot(df_train)
+df_test  <- distance_from_hotspot(df_test)
+
+kable(hotspots_coordinates)%>%
+  kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)%>%
+  column_spec(1, bold = T)%>%
+  scroll_box(width = "500px", height = "350px")
+```
+
+Now that we have the distance from all the hotspots, another next step is to apply clustering to our houses. In order to cluster them, we are going to use the **leaderCluster** package in which we have the option to cluster points based on a **radius** that we define. This approach makes more sense as we do not choose the amount of clusters beforehand and we also use radius that is more reasonable for clustering static points referring to the location of houses. More on that, the algorithm gives us the **number of clusters** in which we do not have any predefined influence (like in K-Means). 
+
+In order to determine the optimal number for the radius (in metres), different values are tried and the below *scatterplot* is shown. Based on trial and error, along with some empirical rules, the **knee** of the plot is chosen as the optimal to be used for the clustering. In our case we choose **2200** as our radius.   
+
+```{r Knee for clusters, echo=FALSE, warning = FALSE, fig.align='center',fig.width=10}
+df_coords <- rbind(df_train[,c('long','lat','id')], df_test[,c('long', 'lat','id')])
+source('scripts/finding_optimal_distance.R')
+cluster_coords_ids_df <- readRDS('data/cluster_coords_ids_df.rds')
+
+df_train_clusters <- cluster_coords_ids_df[1:17277,]
+df_test_clusters  <- cluster_coords_ids_df[17278:21597,]
+
+df_train <- cbind(df_train, df_train_clusters$clust )
+setnames(df_train, old = 'df_train_clusters$clust', new = 'cluster')
+df_test  <- cbind(df_test,  df_test_clusters$clust )
+setnames(df_test, old = 'df_test_clusters$clust', new = 'cluster')
+
+opt_dist_plot
+grid.text(unit(0.5, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Optimal Distance for Hierarchical Clustering",
+          gp=gpar(col='yellow3', fontsize=16, fontfamily = font2))
+```
+
+Some further variables that come to play are:   
+
+*   **new**: whether the house is new or not. This is defined by checking if the **yr_built** is the same as **year**.     
+*   **total_area**: is pretty much described by the name itself and is calculated by the sum of **sqft_living** and the **sqft_basement**.   
+
+```{r Transformations 4, echo=FALSE, warning = FALSE, fig.align='center',fig.width=10}
+# Creating Variable if hte house is new or not 
+df_train$new <- ifelse(df_train$year == df_train$yr_built, 'YES', 'NO')
+df_test$new  <- ifelse(df_test$year  == df_test$yr_built, 'YES', 'NO')
+
+# Creating total size of area of the house
+df_train$total_area <- df_train$sqft_living + df_train$sqft_basement
+df_test$total_area  <- df_test$sqft_living  + df_test$sqft_basement
+
+```
+
+Now that we have all our variables that came up from the Feature Engineering step. It is time to have an overview of our dataset once more. Not only the **summary** and **structure** but also the new **correlation matrix**.
+
+```{r Transformations 5, echo=FALSE, warning = FALSE, fig.align='center',fig.width=8, fig.height=7}
+factor_variables <- c('waterfront', 'view', 'condition', 'grade', 'yr_renovated', 
+                      'month', 'year', 'new')
+
+for (i in factor_variables){
+  df_train[,i] <- as.character(df_train[,i])
+}
+for (i in factor_variables){
+  df_test[,i] <- as.character(df_test[,i])
+}
+# Plot correlation matrix of all the variables that have been added to our initial dataset.
+numeric_data_train_full<-as.data.frame(data.table(df_train[, sapply(df_train,is.numeric)]))
+```
+
+```{r structure1, echo=FALSE, warning=FALSE}
+kable(str(df_train))
+```
+
+```{r summary1, echo=FALSE, warning = FALSE}
+kable(summary(df_train))%>%
+  kable_styling(bootstrap_options = "striped", font_size = 11)%>%
+  scroll_box(width = "100%", height = "400px")
+```
+
+```{r Correlation 2, echo=FALSE, warning = FALSE, fig.align='center',fig.width=8, fig.height=7}
+plot_correlation(numeric_data_train_full, size_p = 0.37, size_t = 0.7)
+``` 
+
+Now that we have all the necessary content, it is time to convert it to the appropriate format. This means:
+
+*   **One hot encoding** of the factor variables     
+*   **Scaling numerical variables** from 0 to 1    
+*   Applying the **logarithmic** transformation on the price to remove the effect that the right skewed distribution might have to our predictive models.   
+
+```{r Transformations 6, echo=FALSE, warning = FALSE, fig.align='center',fig.width=8, fig.height=7}
+# ONE HOT ENCODING
+df_train_full <- one_hot_encoding(df_train)
+corr_full <- cor(df_train_full)
+#plot_correlation(df_train_full, size_p = 0.3, size_t = 0.6)
+df_test_full  <- one_hot_encoding(df_test)
+df_test_full$grade_3 <- 0
+
+# Scaling variables from 0 to 1 
+range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+
+for (i in colnames(df_train_full[, -which(names(df_train_full) %in% c("price"))])){
+  df_train_full[,i] <- range01(df_train_full[,i])
+}
+
+for (i in colnames(df_test_full[, -which(names(df_train_full) %in% c("price"))])){
+  df_test_full[,i] <- range01(df_test_full[,i])
+}
+
+df_test_full$grade_3 <- 0
+
+df_train_full$price <- log(df_train_full$price)
+df_test_full$price  <- log(df_test_full$price)
+```
+
+
+
+
+
+## Machine Learning Pipeline
+
+```{r Predictions Table, echo=FALSE, warning = FALSE, fig.align='center',fig.width=8, fig.height=7}
+prediction_table <- data.frame(df_test$id)
+colnames(prediction_table) <- c('id')
+``` 
+
+
+
+
+
+
+### Dealing with Multicollinearity | Applying Lasso Regression Model
+
+One of the first things we need to do in order to make sure the models do not **overfit**, is to deal with the issue of *multicollinearity* that is obviously appearing in our dataset, just by looking at the correlation matrix immediately above. To find the perfect set of variables, a **lasso regression** model is created that is not only trained to predict, but is able to eliminate unnecessary variables. To train the model a **grid search** is applied to find the optimal set of parameters. The variables and the model are shown below, along with the new correlation amtrix with the variables kept.   
+*(the predictions are stored in the **predictions_lasso** variable)*
+
+```{r Removing Correlation, echo=FALSE, warning = FALSE, fig.align='center',fig.width=8, fig.height=7}
+source('scripts/lasso_reg.R')
+
+df_train_full_lasso <- df_train_full[, varsSelected]
+df_test_full_lasso  <- df_test_full[,varsSelected]
+numeric_data_train_full_lasso<-as.data.frame(data.table(df_train_full_lasso[, sapply(df_train_full_lasso,is.numeric)]))
+df_test_full_lasso <- df_test_full_lasso[, names(df_test_full_lasso) %in% colnames(df_train_full_lasso)]
+
+print(lasso_caret_best)
+prediction_table <- cbind(prediction_table,prediction_lasso)
+colnames(prediction_table) <- c('id','Lasso')
+```
+
+```{r Correlation 3, echo=FALSE, warning = FALSE, fig.align='center',fig.width=8, fig.height=7}
+plot_correlation(numeric_data_train_full_lasso, size_p = 0.5, size_t = 0.7)
+```
+
+
+
+
+
+
+
+### Applying Recursive Feature Elimination | Random Forest modelling & prediction
+
+Apart from just the set of variables that lasso regression comes up with, a **Recursive Feature Elimination (RFE)** is done to our full dataset, in order to both determine the optimal variables, but also the set of parameters for a random forest algorithm (which is the algorithm used from RFE variable selection).    
+In order to cover all different possiblities, another **RFE approach** is followed apart from the one on the **whole dataset**. The other one is performing an **RFE analysis** on only the variables that came out as important from the **Lasso regression elimination.**   
+The results are shown below and the plots are of 2 kinds.     :    
+
+*   The first plot shows the performance of the model based on **RMSE** metric, along with the **min.node.size** parameter.    
+*   The second plot shows the **variable importance** that comes out of the RFE method.   
+
+```{r RFE 0, echo=FALSE, warning = FALSE, fig.align='center',fig.width=10}
+print(rfe_results)
+```
+
+```{r RFE 1, echo=FALSE, warning = FALSE, fig.align='center',fig.width=10}
+rfe_grid_plot
+grid.text(unit(0.55, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Recursive Feature Elimination Grid Results",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+```
+</br>
+```{r RFE 2, echo=FALSE, warning = FALSE, fig.align='center',fig.width=10, fig.height=8}
+rfe_plot
+grid.text(unit(0.65, 'npc'), unit(0.8,"npc"), check.overlap = T,just = "left",
+          label="Variable Importance of RFE",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+```
+
+```{r RFE lasso 1, echo=FALSE, warning = FALSE, fig.align='center',fig.width=10}
+rfe_grid_plot_lasso
+grid.text(unit(0.45, 'npc'), unit(0.9,"npc"), check.overlap = T,just = "left",
+          label="Recursive Feature Elimination Grid Results (lasso)",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+```
+</br>
+```{r RFE lasso 2, echo=FALSE, warning = FALSE, fig.align='center',fig.width=10, fig.height=8}
+rfe_plot_lasso
+grid.text(unit(0.57, 'npc'), unit(0.8,"npc"), check.overlap = T,just = "left",
+          label="Variable Importance of RFE (lasso)",
+          gp=gpar(col=color3, fontsize=16, fontfamily = font2))
+```
+
+Based on the results shown above the optimal set of parameters is: 
+
+*   **mtry** = 7    
+*   **splitrule** = variance   
+*   **min.node.size** = 5.   
+    
+Furthermore, the number of variables that seem to be important are **46** on the one case and **26** on the lasso variables set and are depicted on the following table:   
+
+```{r rfe 4, echo=FALSE, warning = FALSE}
+var_imp_rrfe <- varImp(rfe_results)
+var_imp_rrfe <- as.data.frame(var_imp_rrfe$importance)
+var_imp_rrfe <- as.data.frame(var_imp_rrfe[order(-var_imp_rrfe$Overall),,drop = FALSE])
+colnames(var_imp_rrfe) <- 'Importance RFE'
+
+var_imp_rrfe_lasso <- varImp(rfe_results_lasso)
+var_imp_rrfe_lasso <- as.data.frame(var_imp_rrfe_lasso$importance)
+var_imp_rrfe_lasso <- as.data.frame(var_imp_rrfe_lasso[order(-var_imp_rrfe_lasso$Overall),,drop = FALSE])
+colnames(var_imp_rrfe_lasso) <- 'Importance RFE Lasso'
+
+kable(var_imp_rrfe)%>%
+   kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)%>%
+   column_spec(1, bold = T)%>%
+   row_spec(1:46, bold = T, color = "white", background = "#26a543")%>%
+  row_spec(46:76, bold = T, color = "white", background = "#d30e0e")%>%
+   scroll_box(width = "500px", height = "350px")
+
+kable(var_imp_rrfe_lasso)%>%
+   kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)%>%
+   column_spec(1, bold = T)%>%
+   row_spec(1:28, bold = T, color = "white", background = "#26a543")%>%
+  row_spec(28:47, bold = T, color = "white", background = "#d30e0e")%>%
+   scroll_box(width = "500px", height = "350px")
+
+rfe_predictors <- c('lat','sqft_living','distance_from_Seattle_college','distance_from_uni_of_washington','distance_From_airport', 'sqft_above','total_area','distance_from_ikea','sqft_living15','distance_from_capitol_hill_station','distance_from_lake',  'distance_from_woodland_zoo','distance_from_discovery_park','distance_from_lake_wilderness','distance_from_king_street_station', 'distance_from_us_football_stadium','distance_from_fun_center','distance_from_walmart','distance_from_baseball_stadium', 'distance_from_sodo_station','distance_from_lincol_park','distance_from_golf_course','long','distance_from_municipal_airport', 'grade_7','bathrooms','zipcode','sqft_lot15','sqft_lot','yr_built','age_when_sold','age','grade_9','grade_8','view_0','floors', 'grade_6','sqft_basement','grade_10','bedrooms','grade_11','cluster','view_4','waterfront_1','waterfront_0')
+
+rfe_predictors_lasso <- c('lat','sqft_living','distance_from_uni_of_washington','distance_From_airport', 'distance_from_us_football_stadium','distance_from_ikea','distance_from_discovery_park','distance_from_lake_wilderness', 'distance_from_sodo_station','sqft_living15','total_area','distance_from_walmart','long','grade_7','bathrooms','zipcode','sqft_lot','sqft_lot15','yr_built','grade_8','floors','grade_6','grade_10','bedrooms','grade_11','view_4','waterfront1','condition_4')
+
+
+```
+
+At this stage, it is decided to train a **RandomForest**, based on the parameters and variables found below. The results of the model are shown below.    
+
+(the predictions are stored in the **predictions_rf** and **predictions_rf_lasso** variable)
+
+#### Random Forest with RFE
+```{r Ranger 1, echo=FALSE, warning = FALSE, fig.align='center',fig.width=10, fig.height=8}
+source('scripts/ranger.R')
+print(ranger_rf)
+prediction_table <- cbind(prediction_table,prediction_rf)
+colnames(prediction_table) <- c('id','Lasso','Ranger')
+```
+#### Random Forest with RFE(lasso)
+```{r Ranger 2, echo=FALSE, warning = FALSE, fig.align='center',fig.width=10, fig.height=8}
+print(ranger_rf_lasso)
+prediction_table <- cbind(prediction_table,prediction_rf_lasso)
+colnames(prediction_table) <- c('id','Lasso','Ranger','Ranger Lasso')
+```
+
+### XGBoost Modelling & Prediction
+
+
+Another algorithm that is proved really strong perfomer, is the **XGBoost** one (Extreme Gradient Boosting). The algorithm is trained on the **RFE features** both of lasso and of the full train set and an extensive **grid search** is applied, in order to determine the optimal set of parameters. The results are show below.
+
+(the predictions are stored in the **predictions_xgb** and **predictions_xgb_lasso** variable)
+
+#### Extreme Gradient Boosting with RFE
+```{r XGB 1, echo=FALSE, warning = FALSE, fig.align='center',fig.width=10, fig.height=8}
+source('scripts/xgboost.R')
+print(xgb_caret)
+prediction_table <- cbind(prediction_table,prediction_xgb)
+colnames(prediction_table) <- c('id','Lasso','Ranger','Ranger Lasso','XGBoost')
+```
+#### Extreme Gradient Boosting with RFE(lasso)
+```{r XGB 2, echo=FALSE, warning = FALSE, fig.align='center',fig.width=10, fig.height=8}
+print(xgb_caret_lasso)
+prediction_table <- cbind(prediction_table,prediction_xgb_lasso)
+colnames(prediction_table) <- c('id','Lasso','Ranger','Ranger Lasso','XGBoost', 'XGBoost Lasso')
+```
+
+### Final Metrics of all the algorithms to choose
+
+In order to have a better view of our true algorithms performance, we test models on the **hold out set**. At this step i would like to re assure you that the test set **has not been used** at any step of the training procedure apart from this stage just for verification purposes. The script that reads the file and extracts the hold out set is the **final_metrics.R** one and is read only at this point in time.    
+
+Moreover, apart from the individual model predictions, it is decided to stack the predictions of the best 3 models using a **simple AVG** and a **weighted AVG**. The reason behind this choice is the fact that, by having a look at the predictions of the different models, it can be noticed that *lasso* along with *ranger* and *xgboost* are pretty much uncorrelated. This lead us to the conclusion that they capture different aspects of the test set. As a result an average could possibly get the best out of the three approaches.    
+
+```{r Final Metrics, echo=FALSE, warning = FALSE, fig.align='center',fig.width=10, fig.height=8}
+source('scripts/final_metrics.R')
+
+kable(model_results, caption = "Minimum RMSE through 10-fold Cross Validation")%>%
+  kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)
+
+kable(model_results_test, caption = "Overall Metrics for the models")%>%
+  kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)%>%
+  column_spec(1, bold = T)%>%
+  row_spec(6, bold = T, color = "white", background = "#a5efb6")
+```
+
+### Predictions on the hold-out set & Submission   
+
+Based on the results of the different models on Cross Validation, we would choose the XGBoost which seems to perform better. By having a look at the predictions and performance on the actual hold out set we verify this assumption that XGboost would be the model to go, However, we choose the **Averaged Predictions of our 3 best models XGB, RF and LASSO** as it manages to do what we thought it would, which is capturing more and more of the variance of the hold out set by far better than a simple algorithm.  After that we create the submission file that has 2 fields: **id** of the house, plus the predicted **price**.  
+
+```{r Final Predictions, echo=FALSE, warning = FALSE, fig.align='center',fig.width=10, fig.height=8}
+#create submission df
+submission_stavros_tsentemeidis <- data.frame(id = as.numeric(),
+                             target = as.numeric())
+#cbind prediction
+submission_stavros_tsentemeidis <- predictions_df[,c('id','MEAN_XGB_LASSO_RF')]
+# subsetting submission columns
+colnames(submission_stavros_tsentemeidis) <- c('id','price')
+submission_stavros_tsentemeidis <- as.data.frame(submission_stavros_tsentemeidis)
+attach(submission_stavros_tsentemeidis)
+submission_stavros_tsentemeidis <- submission_stavros_tsentemeidis[order(id),]
+rownames(submission_stavros_tsentemeidis) <- NULL
+#write.csv(submission_stavros_tsentemeidis,row.names = F)
+
+kable(head(submission_stavros_tsentemeidis), caption = "Submission File")%>%
+  kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)
+```
+
+## Conclusions  
+
+As next steps, some of which were tried but not to the full extent to the pipeline would be:  
+
+*   Stacking models in order to improve predictions.(caretStack was creating errors for regression, you can find the script named as *stacking.R*)       
+*   Applying neural networks in order to try improving the performance.(an initial approach was followed but needed a lot more optimization)     
+*   Think of further external variables as Feature Engineering that would give more insights on the data. For example, maybe driving distance from hotspots would be more interpretable than just the haversine one (could try but google needed paying fee)    
+
+
+
+
+###### *Stavros Tsentemeidis* | *Advanced R* | *Individual Assignment* | *House Prices Seattle*
+###### *Master in Big Data and Business Analytics | Oct 2018 Intake | IE School of Human Sciences and Technology*      
